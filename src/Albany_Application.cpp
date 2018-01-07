@@ -658,6 +658,8 @@ void Albany::Application::buildProblem() {
   neq = problem->numEquations();
   spatial_dimension = problem->spatialDimension();
 
+  use_composite_tet_ = problem->useCompositeTet(); 
+
   // Construct responses
   // This really needs to happen after the discretization is created for
   // distributed responses, but currently it can't be moved because there
@@ -3394,6 +3396,7 @@ void Albany::Application::loadBasicWorksetInfoT(PHAL::Workset &workset,
   // workset.delta_time = delta_time;
   workset.transientTerms = Teuchos::nonnull(workset.xdotT);
   workset.accelerationTerms = Teuchos::nonnull(workset.xdotdotT);
+  workset.use_composite_tet = use_composite_tet_; 
 }
 
 void Albany::Application::loadBasicWorksetInfoSDBCsT(

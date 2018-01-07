@@ -66,6 +66,9 @@ public:
   useSDBCs() const {
     return false; 
   }
+    
+  //! Get boolean telling code if composite tets are utilized  
+  virtual bool useCompositeTet() const {return false;};
 
   ///
   /// Build the PDE instantiations, boundary conditions, initial solution

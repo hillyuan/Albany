@@ -159,7 +159,11 @@ struct Workset {
   fixed_dofs_;
 
   bool 
-  is_schwarz_bc_{false}; 
+  is_schwarz_bc_{false};
+
+  bool
+  use_composite_tet{false}; 
+ 
 #endif
 
   int spatial_dimension_{0};

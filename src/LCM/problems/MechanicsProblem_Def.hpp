@@ -204,7 +204,6 @@ MechanicsProblem::constructEvaluators(
             eb_name, "Average J Stabilization Parameter", 0.0);
 
   // Check if we are setting the composite tet flag
-  bool const
   composite = material_db_->getElementBlockParam<bool>(
       eb_name, "Use Composite Tet 10", false);
 

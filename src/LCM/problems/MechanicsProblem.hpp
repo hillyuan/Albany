@@ -79,6 +79,9 @@ public:
   useSDBCs() const {
     return use_sdbcs_; 
   }
+  
+  //! Get boolean telling code if composite tets are utilized  
+  virtual bool useCompositeTet() const {return composite;};
 
   ///
   /// Build the PDE instantiations, boundary conditions, initial solution
@@ -216,6 +219,10 @@ protected:
   /// Boolean marking whether SDBCs are used 
   bool
   use_sdbcs_; 
+
+  ///Boolean checking whether composite tet element is used 
+  bool
+  composite; 
 
   /// Type of thermal source that is in effect
   SOURCE_TYPE

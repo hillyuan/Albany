@@ -43,6 +43,9 @@ namespace Albany {
     //! Get boolean telling code if SDBCs are utilized  
     virtual bool useSDBCs() const {return use_sdbcs_; }
 
+    //! Get boolean telling code if composite tets are utilized  
+    virtual bool useCompositeTet() const {return false;};
+
     // Build evaluators
     virtual Teuchos::Array< Teuchos::RCP<const PHX::FieldTag> >
     buildEvaluators(

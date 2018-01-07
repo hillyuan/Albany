@@ -665,6 +665,8 @@ protected:
 
   bool requires_orig_dbcs_;
 
+  bool use_composite_tet_; 
+
 #if defined(ALBANY_EPETRA)
   //! Communicator
   Teuchos::RCP<const Epetra_Comm> comm;
