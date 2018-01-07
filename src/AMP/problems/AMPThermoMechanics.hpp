@@ -41,6 +41,10 @@ public:
   virtual 
   bool useSDBCs() const {return use_sdbcs_; }
 
+  //! Get boolean telling code if composite tets are utilized  
+  virtual 
+  bool useCompositeTet() const {return false;};
+
   virtual
   void buildProblem(
       Teuchos::ArrayRCP<Teuchos::RCP<Albany::MeshSpecsStruct> >  meshSpecs,

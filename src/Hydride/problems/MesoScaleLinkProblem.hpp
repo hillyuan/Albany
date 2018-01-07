@@ -54,6 +54,9 @@ class MesoScaleLinkProblem : public Albany::AbstractProblem {
     //! Get boolean telling code if SDBCs are utilized  
     virtual bool useSDBCs() const {return use_sdbcs_; }
 
+    //! Get boolean telling code if composite tets are utilized  
+    virtual bool useCompositeTet() const {return false;};
+
     //! Build the PDE instantiations, boundary conditions, and initial solution
     virtual void buildProblem(
       Teuchos::ArrayRCP<Teuchos::RCP<Albany::MeshSpecsStruct> >  meshSpecs,

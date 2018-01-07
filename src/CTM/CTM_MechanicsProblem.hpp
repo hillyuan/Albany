@@ -32,6 +32,9 @@ class MechanicsProblem : public Albany::AbstractProblem {
 
     bool useSDBCs() const {return use_sdbcs_; }
 
+    //! Get boolean telling code if composite tets are utilized  
+    bool useCompositeTet() const {return false;};
+
     void buildProblem(
         ArrayRCP<RCP<Albany::MeshSpecsStruct> > mesh_specs,
         Albany::StateManager& state_mgr);

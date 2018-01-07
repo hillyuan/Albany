@@ -36,6 +36,9 @@ class AdvectionProblem : public AbstractProblem {
 
     bool useSDBCs() const {return use_sdbcs_; }
 
+    //! Get boolean telling code if composite tets are utilized  
+    bool useCompositeTet() const {return false;};
+
     void buildProblem(
         Teuchos::ArrayRCP<Teuchos::RCP<Albany::MeshSpecsStruct> >  meshSpecs,
         StateManager& stateMgr);
