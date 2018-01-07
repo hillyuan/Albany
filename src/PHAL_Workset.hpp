@@ -163,6 +163,9 @@ struct Workset {
 
   bool
   use_composite_tet{false}; 
+
+  bool
+  use_interleaved_order{true}; 
  
 #endif
 

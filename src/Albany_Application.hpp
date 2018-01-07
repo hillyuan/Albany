@@ -656,6 +656,8 @@ private:
 #endif // ALBANY_LCM
 
   std::vector<double> prev_times_;
+  
+  bool interleaved_; 
 
 protected:
   

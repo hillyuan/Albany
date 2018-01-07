@@ -230,6 +230,8 @@ void Albany::Application::initialSetUp(
   // discretization list, if the user specifies this in the problem
   Teuchos::ParameterList &discParams = params->sublist("Discretization");
 
+  interleaved_ = discParams.get("Interleaved Ordering",true);
+
   // Set in Albany_AbstractProblem constructor or in siblings
   num_time_deriv = problemParams->get<int>("Number Of Time Derivatives");
 
@@ -3396,7 +3398,8 @@ void Albany::Application::loadBasicWorksetInfoT(PHAL::Workset &workset,
   // workset.delta_time = delta_time;
   workset.transientTerms = Teuchos::nonnull(workset.xdotT);
   workset.accelerationTerms = Teuchos::nonnull(workset.xdotdotT);
-  workset.use_composite_tet = use_composite_tet_; 
+  workset.use_composite_tet = use_composite_tet_;
+  workset.use_interleaved_order = interleaved_;  
 }
 
 void Albany::Application::loadBasicWorksetInfoSDBCsT(
