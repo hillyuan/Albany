@@ -487,6 +487,18 @@ template<typename Traits>
 void ScatterResidual<PHAL::AlbanyTraits::Jacobian, Traits>::
 evaluateFields(typename Traits::EvalData workset)
 {
+#define DEBUG_OUTPUT
+#ifdef DEBUG_OUTPUT
+  Teuchos::RCP<Teuchos::FancyOStream> out = Teuchos::VerboseObjectBase::getDefaultOStream();
+  for (int j=0; j<10; j++) {
+    std::vector<double> mass_row = this->compositeTetLocalMassRow(j);
+    for (int i=0; i<9; i++) {
+      *out << mass_row[i] << ", "; 
+    }
+    *out << mass_row[10];  
+    std::cout << "\n"; 
+  }
+#endif
 #ifndef ALBANY_KOKKOS_UNDER_DEVELOPMENT
   auto nodeID = workset.wsElNodeEqID;
   Teuchos::RCP<Tpetra_Vector> fT = workset.fT;

@@ -60,6 +60,9 @@ protected:
 
   unsigned short int tensorRank;
 
+  std::vector<double> compositeTetLocalMassRow(const int row) 
+    {std::vector<double> vec(10); return vec;}; 
+
 #ifdef ALBANY_KOKKOS_UNDER_DEVELOPMENT
 protected:
   Albany::AbstractDiscretization::WorksetConn nodeID;
@@ -96,6 +99,9 @@ protected:
 
   typedef typename EvalT::ScalarT ScalarT;
   Teuchos::RCP<std::map<std::string, int> > extruded_params_levels;
+  std::vector<double> compositeTetLocalMassRow(const int row) 
+    {std::vector<double> vec(10); return vec;}; 
+
 };
 
 // **************************************************************
@@ -117,6 +123,9 @@ public:
   void evaluateFields(typename Traits::EvalData d);
 protected:
   const std::size_t numFields;
+  std::vector<double> compositeTetLocalMassRow(const int row) 
+    {std::vector<double> vec(10); return vec;}; 
+
 private:
   typedef typename PHAL::AlbanyTraits::Residual::ScalarT ScalarT;
 
@@ -161,6 +170,69 @@ public:
   void evaluateFields(typename Traits::EvalData d);
 protected:
   const std::size_t numFields;
+  std::vector<double> compositeTetLocalMassRow(const int row) 
+    {std::vector<double> mass_row(10); 
+     //IKT, question for LCM guys: is ordering of nodes in Albany for composite
+     //tet consistent with (C.4) in IJNME paper?  If not, may need to change
+     //expression found here.
+     //IKT, question for LCM guys: what do mass matrix entries need to be 
+     //multiplied by? 
+     //IKT, question for LCM guys: how to modify residual to have effect of mass 
+     //matrix / dDot term??
+     if (row == 0) {
+       mass_row[0] = 1.0/80.0; mass_row[4] = 1.0/160.0; 
+       mass_row[6] = 1.0/160.0; mass_row[7] = 1.0/160.0;  
+     }
+     else if (row == 1) {
+       mass_row[1] = 1.0/80.0; mass_row[4] = 1.0/160.0; 
+       mass_row[5] = 1.0/160.0; mass_row[8] = 1.0/160.0;  
+     }
+     else if (row == 2) {
+       mass_row[2] = 1.0/80.0; mass_row[5] = 1.0/160.0; 
+       mass_row[6] = 1.0/160.0; mass_row[9] = 1.0/160.0;  
+     }
+     else if (row == 3) {
+       mass_row[3] = 1.0/80.0; mass_row[7] = 1.0/160.0; 
+       mass_row[8] = 1.0/160.0; mass_row[9] = 1.0/160.0;  
+     }
+     else if (row == 4) {
+       mass_row[0] = 1.0/160.0; mass_row[1] = 1.0/160.0; 
+       mass_row[4] = 1.0/18.0; mass_row[5] = 13.0/720.0; 
+       mass_row[6] = 13.0/720.0; mass_row[7] = 13.0/720.0; 
+       mass_row[8] = 13.0/720.0; mass_row[9] = 1.0/180.0; 
+     }
+     else if (row == 5) {
+       mass_row[1] = 1.0/160.0; mass_row[2] = 1.0/160.0; 
+       mass_row[4] = 13.0/720.0; mass_row[5] = 1.0/18.0; 
+       mass_row[6] = 13.0/720.0; mass_row[7] = 1.0/180.0; 
+       mass_row[8] = 13.0/720.0; mass_row[9] = 13.0/720.0; 
+     }
+     else if (row == 6) {
+       mass_row[0] = 1.0/160.0; mass_row[2] = 1.0/160.0; 
+       mass_row[4] = 13.0/720.0; mass_row[5] = 13.0/720.0; 
+       mass_row[6] = 1.0/18.0; mass_row[7] = 13.0/720.0; 
+       mass_row[8] = 1.0/180.0; mass_row[9] = 13.0/720.0; 
+     }
+     else if (row == 7) {
+       mass_row[0] = 1.0/160.0; mass_row[3] = 1.0/160.0; 
+       mass_row[4] = 13.0/720.0; mass_row[5] = 1.0/180.0; 
+       mass_row[6] = 13.0/720.0; mass_row[7] = 1.0/18.0; 
+       mass_row[8] = 13.0/720.0; mass_row[9] = 13.0/720.0; 
+     }
+     else if (row == 8) {
+       mass_row[1] = 1.0/160.0; mass_row[3] = 1.0/160.0; 
+       mass_row[4] = 13.0/720.0; mass_row[5] = 13.0/720.0; 
+       mass_row[6] = 1.0/180.0; mass_row[7] = 13.0/720.0; 
+       mass_row[8] = 1.0/18.0; mass_row[9] = 13.0/720.0; 
+     }
+     else if (row == 9) {
+       mass_row[2] = 1.0/160.0; mass_row[3] = 1.0/160.0; 
+       mass_row[4] = 1.0/160.0; mass_row[5] = 1.0/180.0; 
+       mass_row[6] = 13.0/720.0; mass_row[7] = 13.0/720.0; 
+       mass_row[8] = 13.0/720.0; mass_row[9] = 1.0/18.0; 
+     }
+     return mass_row;}; 
+
 private:
   typedef typename PHAL::AlbanyTraits::Jacobian::ScalarT ScalarT;
 
@@ -232,6 +304,9 @@ public:
   void evaluateFields(typename Traits::EvalData d);
 protected:
   const std::size_t numFields;
+  std::vector<double> compositeTetLocalMassRow(const int row) 
+    {std::vector<double> vec(10); return vec;}; 
+
 private:
   typedef typename PHAL::AlbanyTraits::Tangent::ScalarT ScalarT;
 };
@@ -248,6 +323,9 @@ public:
   void evaluateFields(typename Traits::EvalData d);
 protected:
   const std::size_t numFields;
+  std::vector<double> compositeTetLocalMassRow(const int row) 
+    {std::vector<double> vec(10); return vec;}; 
+
 private:
   typedef typename PHAL::AlbanyTraits::DistParamDeriv::ScalarT ScalarT;
 };
