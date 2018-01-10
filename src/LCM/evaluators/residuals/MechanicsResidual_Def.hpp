@@ -230,6 +230,11 @@ MechanicsResidual<EvalT, Traits>::evaluateFields(
 
   // dynamic term
   if (workset.transientTerms && enable_dynamics_) {
+  //IKT, FIXME: swap the above line for the following when ready 
+  //If transient problem and not using composite tet element, enable acceleration terms.
+  //This is similar to what is done in Peridigm when mass is passed from peridigm rather than 
+  //computed in Albany; see, e.g., albanyIsCreatingMassMatrix-based logic in PeridigmForce_Def.hpp 
+  //if (workset.transientTerms && enable_dynamics_ && (workset.use_composite_tet == false)) {
     for (int cell = 0; cell < workset.numCells; ++cell) {
       for (int node = 0; node < num_nodes_; ++node) {
         for (int pt = 0; pt < num_pts_; ++pt) {
