@@ -433,7 +433,7 @@ operator() (const PHAL_ScatterCompositeTetMassRank1_Tag&, const int& cell) const
   //IKT, FIXME: ask Jerry re: logic in functors - probably best to avoid?
   //IKT, FIXME: ask Jerry re: code duplication here. 
   for (int node = 0; node < this->numNodes; ++node) {
-    std::vector<double> mass_row = this->compositeTetLocalMassRow(node);
+    Kokkos::vector<double> mass_row = this->compositeTetLocalMassRow(node);
 #ifdef DEBUG_OUTPUT
     //Print entries of local mass for debugging purposes 
     auto length = mass_row.size(); 

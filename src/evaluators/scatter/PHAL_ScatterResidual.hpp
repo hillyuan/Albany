@@ -51,7 +51,7 @@ public:
 protected:
   typedef typename EvalT::ScalarT ScalarT;
   Teuchos::RCP<PHX::FieldTag> scatter_operation;
-  std::vector< PHX::MDField<ScalarT const,Cell,Node> > val;
+  Kokkos::vector< PHX::MDField<ScalarT const,Cell,Node> > val;
   PHX::MDField<ScalarT const,Cell,Node,Dim>  valVec;
   PHX::MDField<ScalarT const,Cell,Node,Dim,Dim> valTensor;
   std::size_t numNodes;
@@ -60,8 +60,8 @@ protected:
 
   unsigned short int tensorRank;
 
-  std::vector<double> compositeTetLocalMassRow(const int row) 
-    {std::vector<double> vec(10); return vec;}; 
+  Kokkos::vector<double> compositeTetLocalMassRow(const int row) 
+    {Kokkos::vector<double> vec(10); return vec;}; 
 
 #ifdef ALBANY_KOKKOS_UNDER_DEVELOPMENT
 protected:
@@ -99,8 +99,8 @@ protected:
 
   typedef typename EvalT::ScalarT ScalarT;
   Teuchos::RCP<std::map<std::string, int> > extruded_params_levels;
-  std::vector<double> compositeTetLocalMassRow(const int row) 
-    {std::vector<double> vec(10); return vec;}; 
+  Kokkos::vector<double> compositeTetLocalMassRow(const int row) 
+    {Kokkos::vector<double> vec(10); return vec;}; 
 
 };
 
@@ -123,8 +123,8 @@ public:
   void evaluateFields(typename Traits::EvalData d);
 protected:
   const std::size_t numFields;
-  std::vector<double> compositeTetLocalMassRow(const int row) 
-    {std::vector<double> vec(10); return vec;}; 
+  Kokkos::vector<double> compositeTetLocalMassRow(const int row) 
+    {Kokkos::vector<double> vec(10); return vec;}; 
 
 private:
   typedef typename PHAL::AlbanyTraits::Residual::ScalarT ScalarT;
@@ -171,8 +171,8 @@ public:
 protected:
   const std::size_t numFields;
   //IKT, FIXME: probably this function should be moved somewhere else
-  std::vector<double> compositeTetLocalMassRow(const int row) const 
-    {std::vector<double> mass_row(10); 
+  Kokkos::vector<double> compositeTetLocalMassRow(const int row) const 
+    {Kokkos::vector<double> mass_row(10); 
      //IKT, question for LCM guys: is ordering of nodes in Albany for composite
      //tet consistent with (C.4) in IJNME paper?  If not, may need to change
      //expression found here.
@@ -313,8 +313,8 @@ public:
   void evaluateFields(typename Traits::EvalData d);
 protected:
   const std::size_t numFields;
-  std::vector<double> compositeTetLocalMassRow(const int row) 
-    {std::vector<double> vec(10); return vec;}; 
+  Kokkos::vector<double> compositeTetLocalMassRow(const int row) 
+    {Kokkos::vector<double> vec(10); return vec;}; 
 
 private:
   typedef typename PHAL::AlbanyTraits::Tangent::ScalarT ScalarT;
@@ -332,8 +332,8 @@ public:
   void evaluateFields(typename Traits::EvalData d);
 protected:
   const std::size_t numFields;
-  std::vector<double> compositeTetLocalMassRow(const int row) 
-    {std::vector<double> vec(10); return vec;}; 
+  Kokkos::vector<double> compositeTetLocalMassRow(const int row) 
+    {Kokkos::vector<double> vec(10); return vec;}; 
 
 private:
   typedef typename PHAL::AlbanyTraits::DistParamDeriv::ScalarT ScalarT;
