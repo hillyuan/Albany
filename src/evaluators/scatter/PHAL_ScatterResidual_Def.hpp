@@ -403,6 +403,66 @@ operator() (const PHAL_ScatterJacRank1_Tag&, const int& cell) const
 template<typename Traits>
 KOKKOS_INLINE_FUNCTION
 void ScatterResidual<PHAL::AlbanyTraits::Jacobian,Traits>::
+operator() (const PHAL_ScatterCompositeTetMassRank1_Tag&, const int& cell) const
+{
+  //const int neq = nodeID.dimension(2);
+  //const int nunk = neq*this->numNodes;
+  // Irina TOFIX replace 500 with nunk with Kokkos::malloc is available
+  LO colT[500];
+  LO rowT;
+  ST vals[500];
+#define DEBUG_OUTPUT
+#ifdef DEBUG_OUTPUT
+  Teuchos::RCP<Teuchos::FancyOStream> out = Teuchos::VerboseObjectBase::getDefaultOStream();
+  *out << "IKT in PHAL_ScatterCompositeTetMassRank1 policy! \n";
+  *out << "  IKT interleaved? " << interleaved << "\n"; 
+  *out << "  IKT n_coeff = " << n_coeff << "\n"; 
+#endif
+  //std::vector<LO> colT(nunk);
+  //colT=(LO*) Kokkos::malloc<PHX::Device>(nunk*sizeof(LO));
+  //std::vector<ST> vals(nunk);
+
+  if (nunk>500) Kokkos::abort ("ERROR (ScatterResidual): nunk > 500");
+
+  for (int node_col=0, i=0; node_col<this->numNodes; node_col++) {
+    for (int eq_col=0; eq_col<neq; eq_col++) {
+      colT[neq * node_col + eq_col] = nodeID(cell,node_col,eq_col);
+    }
+  }
+
+  //IKT, FIXME: ask Jerry re: logic in functors - probably best to avoid?
+  //IKT, FIXME: ask Jerry re: code duplication here. 
+  for (int node = 0; node < this->numNodes; ++node) {
+    std::vector<double> mass_row = this->compositeTetLocalMassRow(node);
+#ifdef DEBUG_OUTPUT
+    //Print entries of local mass for debugging purposes 
+    auto length = mass_row.size(); 
+    for (int i=0; i<length-1; i++) {
+      *out << mass_row[i] << ", "; 
+    }
+    *out << mass_row[length-1];  
+    *out << "\n"; 
+#endif
+    for (int eq = 0; eq < numFields; eq++) {
+      rowT = nodeID(cell,node,this->offset + eq);
+      int k; 
+      for (int i=0; i < this->numNodes; ++i) {
+        for (int j=0; j < numFields; j++) {
+          //IKT, FIXME: move this if statement at least outside of loop
+          if (interleaved == true) k = i*numFields + j; 
+          else k = j*this->numNodes + i;  
+          vals[k] = n_coeff*mass_row[i]; 
+        }    
+      }
+      //IKT, FIXME: uncomment the following when ready 
+      //JacT_kokkos.sumIntoValues(rowT, colT, nunk, vals, false, true);
+    }
+  }
+}
+
+template<typename Traits>
+KOKKOS_INLINE_FUNCTION
+void ScatterResidual<PHAL::AlbanyTraits::Jacobian,Traits>::
 operator() (const PHAL_ScatterResRank2_Tag&, const int& cell) const
 {
   for (std::size_t node = 0; node < this->numNodes; node++)
@@ -487,18 +547,9 @@ template<typename Traits>
 void ScatterResidual<PHAL::AlbanyTraits::Jacobian, Traits>::
 evaluateFields(typename Traits::EvalData workset)
 {
-#define DEBUG_OUTPUT
-#ifdef DEBUG_OUTPUT
-  Teuchos::RCP<Teuchos::FancyOStream> out = Teuchos::VerboseObjectBase::getDefaultOStream();
-  for (int j=0; j<10; j++) {
-    std::vector<double> mass_row = this->compositeTetLocalMassRow(j);
-    for (int i=0; i<9; i++) {
-      *out << mass_row[i] << ", "; 
-    }
-    *out << mass_row[10];  
-    std::cout << "\n"; 
-  }
-#endif
+  bool useCompositeTet = workset.use_composite_tet; 
+  interleaved = workset.use_interleaved_order; 
+  n_coeff = workset.n_coeff; 
 #ifndef ALBANY_KOKKOS_UNDER_DEVELOPMENT
   auto nodeID = workset.wsElNodeEqID;
   Teuchos::RCP<Tpetra_Vector> fT = workset.fT;
@@ -565,6 +616,8 @@ evaluateFields(typename Traits::EvalData workset)
   }
   JacT_kokkos = workset.JacT->getLocalMatrix();
 
+
+  //IKT, question for LCM guys: is tensorRank == 0, 2 relevant for composite tet problems? 
   if (this->tensorRank == 0) {
     // Get MDField views from std::vector
     for (int i = 0; i < numFields; i++)
@@ -589,7 +642,6 @@ evaluateFields(typename Traits::EvalData workset)
       Kokkos::parallel_for(PHAL_ScatterResRank1_Policy(0,workset.numCells),*this);
       cudaCheckError();
     }
-
     if (workset.is_adjoint) {
       Kokkos::parallel_for(PHAL_ScatterJacRank1_Adjoint_Policy(0,workset.numCells),*this);
       cudaCheckError();
@@ -597,6 +649,10 @@ evaluateFields(typename Traits::EvalData workset)
     else {
       Kokkos::parallel_for(PHAL_ScatterJacRank1_Policy(0,workset.numCells),*this);
       cudaCheckError();
+      if ((useCompositeTet == true) && (n_coeff != 0.0)) { //for dynamic problems using composite tet element
+        Kokkos::parallel_for(PHAL_ScatterCompositeTetMassRank1_Policy(0,workset.numCells),*this);
+        cudaCheckError();
+      }
     }
   }
   else if (this->tensorRank == 2) {

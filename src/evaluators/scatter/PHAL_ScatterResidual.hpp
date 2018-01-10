@@ -170,7 +170,8 @@ public:
   void evaluateFields(typename Traits::EvalData d);
 protected:
   const std::size_t numFields;
-  std::vector<double> compositeTetLocalMassRow(const int row) 
+  //IKT, FIXME: probably this function should be moved somewhere else
+  std::vector<double> compositeTetLocalMassRow(const int row) const 
     {std::vector<double> mass_row(10); 
      //IKT, question for LCM guys: is ordering of nodes in Albany for composite
      //tet consistent with (C.4) in IJNME paper?  If not, may need to change
@@ -179,6 +180,8 @@ protected:
      //multiplied by? 
      //IKT, question for LCM guys: how to modify residual to have effect of mass 
      //matrix / dDot term??
+     //IKT, question for LCM guys: do we have analytic expression for mass for regular tets or hexes,
+     //to facilitated with debugging? 
      if (row == 0) {
        mass_row[0] = 1.0/80.0; mass_row[4] = 1.0/160.0; 
        mass_row[6] = 1.0/160.0; mass_row[7] = 1.0/160.0;  
@@ -244,6 +247,7 @@ public:
   struct PHAL_ScatterResRank1_Tag{};
   struct PHAL_ScatterJacRank1_Adjoint_Tag{};
   struct PHAL_ScatterJacRank1_Tag{};
+  struct PHAL_ScatterCompositeTetMassRank1_Tag{};
   struct PHAL_ScatterResRank2_Tag{};
   struct PHAL_ScatterJacRank2_Adjoint_Tag{};
   struct PHAL_ScatterJacRank2_Tag{};
@@ -261,6 +265,8 @@ public:
   void operator() (const PHAL_ScatterJacRank1_Adjoint_Tag&, const int& cell) const;
   KOKKOS_INLINE_FUNCTION
   void operator() (const PHAL_ScatterJacRank1_Tag&, const int& cell) const;
+  KOKKOS_INLINE_FUNCTION
+  void operator() (const PHAL_ScatterCompositeTetMassRank1_Tag&, const int& cell) const;
 
   KOKKOS_INLINE_FUNCTION
   void operator() (const PHAL_ScatterResRank2_Tag&, const int& cell) const;
@@ -271,6 +277,8 @@ public:
 
 private:
   int neq, nunk, numDims;
+  bool interleaved;
+  double n_coeff;  
   Tpetra_CrsMatrix::local_matrix_type JacT_kokkos;
 
   typedef ScatterResidualBase<PHAL::AlbanyTraits::Jacobian, Traits> Base;
@@ -285,6 +293,7 @@ private:
   typedef Kokkos::RangePolicy<ExecutionSpace, PHAL_ScatterResRank1_Tag> PHAL_ScatterResRank1_Policy;
   typedef Kokkos::RangePolicy<ExecutionSpace, PHAL_ScatterJacRank1_Adjoint_Tag> PHAL_ScatterJacRank1_Adjoint_Policy;
   typedef Kokkos::RangePolicy<ExecutionSpace, PHAL_ScatterJacRank1_Tag> PHAL_ScatterJacRank1_Policy;
+  typedef Kokkos::RangePolicy<ExecutionSpace, PHAL_ScatterCompositeTetMassRank1_Tag> PHAL_ScatterCompositeTetMassRank1_Policy;
   typedef Kokkos::RangePolicy<ExecutionSpace, PHAL_ScatterResRank2_Tag> PHAL_ScatterResRank2_Policy;
   typedef Kokkos::RangePolicy<ExecutionSpace, PHAL_ScatterJacRank2_Adjoint_Tag> PHAL_ScatterJacRank2_Adjoint_Policy;
   typedef Kokkos::RangePolicy<ExecutionSpace, PHAL_ScatterJacRank2_Tag> PHAL_ScatterJacRank2_Policy;
