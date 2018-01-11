@@ -99,6 +99,80 @@ postRegistrationSetup(typename Traits::SetupData d,
   }
 }
 
+template<typename EvalT, typename Traits>
+Kokkos::vector<double> ScatterResidualBase<EvalT, Traits>::
+compositeTetLocalMassRow(const int row) const
+{
+  Kokkos::vector<double> mass_row(10);
+  //IKT, question for LCM guys: is ordering of nodes in Albany for composite
+  //tet consistent with (C.4) in IJNME paper?  If not, may need to change
+  //expression found here.
+  //IKT, question for LCM guys: what do mass matrix entries need to be 
+  //multiplied by?  I believe element mass is density_*jacobian_det.
+  //IKT, question for LCM guys: how to modify residual to have effect of mass 
+  //matrix / dDot term??
+  switch(row) {
+    case 0:
+      mass_row[0] = 1.0/80.0; mass_row[4] = 1.0/160.0;
+      mass_row[6] = 1.0/160.0; mass_row[7] = 1.0/160.0;
+      break;
+    case 1:
+      mass_row[1] = 1.0/80.0; mass_row[4] = 1.0/160.0;
+      mass_row[5] = 1.0/160.0; mass_row[8] = 1.0/160.0;
+      break;
+    case 2:
+      mass_row[2] = 1.0/80.0; mass_row[5] = 1.0/160.0;
+      mass_row[6] = 1.0/160.0; mass_row[9] = 1.0/160.0;
+      break;
+    case 3:
+      mass_row[3] = 1.0/80.0; mass_row[7] = 1.0/160.0;
+      mass_row[8] = 1.0/160.0; mass_row[9] = 1.0/160.0;
+      break;
+    case 4:
+      mass_row[0] = 1.0/160.0; mass_row[1] = 1.0/160.0;
+      mass_row[4] = 1.0/18.0; mass_row[5] = 13.0/720.0;
+      mass_row[6] = 13.0/720.0; mass_row[7] = 13.0/720.0;
+      mass_row[8] = 13.0/720.0; mass_row[9] = 1.0/180.0;
+      break;
+    case 5:
+      mass_row[1] = 1.0/160.0; mass_row[2] = 1.0/160.0;
+      mass_row[4] = 13.0/720.0; mass_row[5] = 1.0/18.0;
+      mass_row[6] = 13.0/720.0; mass_row[7] = 1.0/180.0;
+      mass_row[8] = 13.0/720.0; mass_row[9] = 13.0/720.0;
+      break;
+    case 6:
+      mass_row[0] = 1.0/160.0; mass_row[2] = 1.0/160.0;
+      mass_row[4] = 13.0/720.0; mass_row[5] = 13.0/720.0;
+      mass_row[6] = 1.0/18.0; mass_row[7] = 13.0/720.0;
+      mass_row[8] = 1.0/180.0; mass_row[9] = 13.0/720.0;
+      break;
+    case 7:
+      mass_row[0] = 1.0/160.0; mass_row[3] = 1.0/160.0;
+      mass_row[4] = 13.0/720.0; mass_row[5] = 1.0/180.0;
+      mass_row[6] = 13.0/720.0; mass_row[7] = 1.0/18.0;
+      mass_row[8] = 13.0/720.0; mass_row[9] = 13.0/720.0;
+      break;
+    case 8:
+      mass_row[1] = 1.0/160.0; mass_row[3] = 1.0/160.0;
+      mass_row[4] = 13.0/720.0; mass_row[5] = 13.0/720.0;
+      mass_row[6] = 1.0/180.0; mass_row[7] = 13.0/720.0;
+      mass_row[8] = 1.0/18.0; mass_row[9] = 13.0/720.0;
+      break;
+    case 9:
+      mass_row[2] = 1.0/160.0; mass_row[3] = 1.0/160.0;
+      mass_row[4] = 1.0/160.0; mass_row[5] = 1.0/180.0;
+      mass_row[6] = 13.0/720.0; mass_row[7] = 13.0/720.0;
+      mass_row[8] = 13.0/720.0; mass_row[9] = 1.0/18.0;
+      break;
+ default:
+      TEUCHOS_TEST_FOR_EXCEPTION (true, std::logic_error,
+                                  "Error! invalid value row = " << row << " to compositeTetLocalMassRow! \n"
+                                  << "Row must be between 0 and 9.\n");
+  }
+  return mass_row;
+}
+
+
 // **********************************************************************
 // Specialization: Residual
 // **********************************************************************
@@ -393,10 +467,16 @@ operator() (const PHAL_ScatterJacRank1_Tag&, const int& cell) const
     for (int eq = 0; eq < numFields; eq++) {
       rowT = nodeID(cell,node,this->offset + eq);
       if (((this->valVec)(cell,node,eq)).hasFastAccess()) {
-        for (int i = 0; i < nunk; ++i) vals[i] = (this->valVec)(cell,node,eq).fastAccessDx(i);
+        for (int i = 0; i < nunk; ++i) {
+          vals[i] = (this->valVec)(cell,node,eq).fastAccessDx(i);
+          if ((cell == 0) &&  (eq == 0)) {
+            std::cout << vals[i] << ", "; 
+          }
+        }
         JacT_kokkos.sumIntoValues(rowT, colT, nunk, vals, false, true);
       }
     }
+    std::cout << "\n"; 
   }
 }
 
