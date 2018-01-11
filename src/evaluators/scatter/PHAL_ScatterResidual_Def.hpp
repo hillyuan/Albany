@@ -469,14 +469,19 @@ operator() (const PHAL_ScatterJacRank1_Tag&, const int& cell) const
       if (((this->valVec)(cell,node,eq)).hasFastAccess()) {
         for (int i = 0; i < nunk; ++i) {
           vals[i] = (this->valVec)(cell,node,eq).fastAccessDx(i);
+//#define DEBUG_OUTPUT
+#ifdef DEBUG_OUTPUT
           if ((cell == 0) &&  (eq == 0)) {
             std::cout << vals[i] << ", "; 
           }
+#endif
         }
         JacT_kokkos.sumIntoValues(rowT, colT, nunk, vals, false, true);
       }
     }
+#ifdef DEBUG_OUTPUT
     std::cout << "\n"; 
+#endif
   }
 }
 
