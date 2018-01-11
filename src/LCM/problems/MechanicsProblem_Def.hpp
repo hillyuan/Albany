@@ -18,6 +18,7 @@
 #include "BodyForce.hpp"
 #include "CurrentCoords.hpp"
 #include "MechanicsResidual.hpp"
+#include "CompositeTetMassResidual.hpp"
 #include "SurfaceBasis.hpp"
 #include "SurfaceScalarGradientOperator.hpp"
 #include "SurfaceScalarJump.hpp"
