@@ -42,6 +42,7 @@ protected:
   typedef typename EvalT::ScalarT ScalarT;
   typedef typename EvalT::MeshScalarT MeshScalarT;
 
+  std::vector<double> compositeTetLocalMassRow(const int row) const;
   /// Input: Weighted Basis Function Gradients
   PHX::MDField<const MeshScalarT, Cell, Node, QuadPoint, Dim> w_grad_bf_;
   /// Input: Weighted Basis Functions
@@ -118,7 +119,7 @@ public:
                               const Teuchos::RCP<Albany::Layouts>& dl);
   void evaluateFields(typename Traits::EvalData d);
 protected:
-
+  std::vector<double> compositeTetLocalMassRow(const int row) const;  
 private:
   typedef typename PHAL::AlbanyTraits::Tangent::ScalarT ScalarT;
 };
