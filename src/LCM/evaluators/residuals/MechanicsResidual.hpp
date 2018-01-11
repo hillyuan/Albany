@@ -76,6 +76,11 @@ class MechanicsResidual : public PHX::EvaluatorWithBaseImpl<Traits>,
   /// Input: acceleration
   ///
   PHX::MDField<const ScalarT, Cell, QuadPoint, Dim> acceleration_;
+  
+  ///
+  /// Input: Composite Tet Mass contribution to residual/Jacobian 
+  ///
+  PHX::MDField<const ScalarT, Cell, Node, Dim> ct_mass_;
 
   ///
   /// Output: Residual Forces

@@ -49,8 +49,8 @@ protected:
   PHX::MDField<const MeshScalarT, Cell, Node, QuadPoint> w_bf_;
   /// Input: acceleration
   PHX::MDField<const ScalarT, Cell, QuadPoint, Dim> acceleration_;
-  /// Output: Residual Forces
-  PHX::MDField<ScalarT, Cell, Node, Dim> residual_;
+  /// Output: Composite Tet Mass contribution to residual/Jacobian 
+  PHX::MDField<ScalarT, Cell, Node, Dim> ct_mass_;
   /// Number of element nodes
   int num_nodes_;
   /// Number of integration points
@@ -61,7 +61,8 @@ protected:
   double density_{1.0};
   /// Dynamics flag
   bool enable_dynamics_;
-
+  /// FOS for debug output
+  Teuchos::RCP<Teuchos::FancyOStream> out_;
 };
 
 template<typename EvalT, typename Traits> class CompositeTetMassResidual;

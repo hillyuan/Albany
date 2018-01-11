@@ -27,12 +27,14 @@ MechanicsResidual<EvalT, Traits>::MechanicsResidual(
           dl->node_qp_vector),
       w_bf_(p.get<std::string>("Weighted BF Name"), dl->node_qp_scalar),
       residual_(p.get<std::string>("Residual Name"), dl->node_vector),
+      ct_mass_(p.get<std::string>("Composite Tet Mass Name"), dl->node_vector),  
       have_body_force_(p.isType<bool>("Has Body Force")),
       density_(p.get<RealType>("Density", 1.0))
 {
   this->addDependentField(stress_);
   this->addDependentField(w_grad_bf_);
   this->addDependentField(w_bf_);
+  this->addDependentField(ct_mass_);
 
   this->addEvaluatedField(residual_);
 
@@ -77,6 +79,7 @@ MechanicsResidual<EvalT, Traits>::postRegistrationSetup(
   this->utils.setFieldData(stress_, fm);
   this->utils.setFieldData(w_grad_bf_, fm);
   this->utils.setFieldData(w_bf_, fm);
+  this->utils.setFieldData(ct_mass_, fm);
   this->utils.setFieldData(residual_, fm);
   if (have_body_force_) {
     this->utils.setFieldData(body_force_, fm);
@@ -230,21 +233,35 @@ MechanicsResidual<EvalT, Traits>::evaluateFields(
 
   // dynamic term
   if (workset.transientTerms && enable_dynamics_) {
-  //IKT, FIXME: swap the above line for the following when ready 
   //If transient problem and not using composite tet element, enable acceleration terms.
   //This is similar to what is done in Peridigm when mass is passed from peridigm rather than 
   //computed in Albany; see, e.g., albanyIsCreatingMassMatrix-based logic in PeridigmForce_Def.hpp 
-  //if (workset.transientTerms && enable_dynamics_ && (workset.use_composite_tet == false)) {
-    for (int cell = 0; cell < workset.numCells; ++cell) {
-      for (int node = 0; node < num_nodes_; ++node) {
-        for (int pt = 0; pt < num_pts_; ++pt) {
-          for (int dim = 0; dim < num_dims_; ++dim) {
-            residual_(cell, node, dim) +=
-                density_ * acceleration_(cell, pt, dim) * w_bf_(cell, node, pt);
+  //IKT, FIXME: uncomment following when ready
+  //IKT, FIXME? if this ends up being the ultimate design for the composite tet mass, can get rid of 
+  //use_composite_tet and is_interleaved in workset, and relevant commits.  Just pass logic re: composite
+  //tet from problem. 
+    //if (workset.use_composite_tet == false) { //not using a composite tet element 
+      for (int cell = 0; cell < workset.numCells; ++cell) {
+        for (int node = 0; node < num_nodes_; ++node) {
+          for (int pt = 0; pt < num_pts_; ++pt) {
+            for (int dim = 0; dim < num_dims_; ++dim) {
+              residual_(cell, node, dim) +=
+                  density_ * acceleration_(cell, pt, dim) * w_bf_(cell, node, pt);
+            }
           }
         }
       }
-    }
+    //IKT, FIXME: uncomment following when ready 
+    /*}
+    //else { //using composite tet element: add contribution from composite tet mass evaluator
+      for (int cell = 0; cell < workset.numCells; ++cell) {
+        for (int node = 0; node < num_nodes_; ++node) {
+          for (int dim = 0; dim < num_dims_; ++dim) {
+            residual_(cell, node, dim) += ct_mass_(cell, node, dim); 
+          }
+        }
+      }
+    }*/
   }
 }
 //------------------------------------------------------------------------------
