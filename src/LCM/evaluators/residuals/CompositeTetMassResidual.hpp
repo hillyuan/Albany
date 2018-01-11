@@ -7,14 +7,14 @@
 #ifndef LCM_CompositeTetMass_RESIDUAL_HPP
 #define LCM_CompositeTetMass_RESIDUAL_HPP
 
-#include "Phalanx_config.hpp"
-#include "Phalanx_Evaluator_WithBaseImpl.hpp"
-#include "Phalanx_Evaluator_Derived.hpp"
-#include "Phalanx_MDField.hpp"
-
+#include <Phalanx_Evaluator_Derived.hpp>
+#include <Phalanx_Evaluator_WithBaseImpl.hpp>
+#include <Phalanx_MDField.hpp>
+#include <Phalanx_config.hpp>
+#include <Sacado_ParameterAccessor.hpp>
 #include "Albany_Layouts.hpp"
 
-#include "Teuchos_ParameterList.hpp"
+
 
 namespace LCM {
 /** \brief FIXME: fill in!
@@ -57,7 +57,7 @@ protected:
   /// Number of spatial dimensions
   int num_dims_;
   /// Density
-  RealType density_;
+  double density_{1.0};
   /// Dynamics flag
   bool enable_dynamics_;
 
