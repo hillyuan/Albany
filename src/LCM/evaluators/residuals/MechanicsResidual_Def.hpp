@@ -29,6 +29,7 @@ MechanicsResidual<EvalT, Traits>::MechanicsResidual(
       residual_(p.get<std::string>("Residual Name"), dl->node_vector),
       ct_mass_(p.get<std::string>("Composite Tet Mass Name"), dl->node_vector),  
       have_body_force_(p.isType<bool>("Has Body Force")),
+      use_composite_tet_(p.isType<bool>("Use Composite Tet")),
       density_(p.get<RealType>("Density", 1.0))
 {
   this->addDependentField(stress_);
@@ -240,7 +241,7 @@ MechanicsResidual<EvalT, Traits>::evaluateFields(
   //IKT, FIXME? if this ends up being the ultimate design for the composite tet mass, can get rid of 
   //use_composite_tet and is_interleaved in workset, and relevant commits.  Just pass logic re: composite
   //tet from problem. 
-    //if (workset.use_composite_tet == false) { //not using a composite tet element 
+    //if (use_composite_tet_ == false) { //not using a composite tet element 
       for (int cell = 0; cell < workset.numCells; ++cell) {
         for (int node = 0; node < num_nodes_; ++node) {
           for (int pt = 0; pt < num_pts_; ++pt) {

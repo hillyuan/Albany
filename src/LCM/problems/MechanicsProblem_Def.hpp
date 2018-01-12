@@ -1805,10 +1805,7 @@ MechanicsProblem::constructEvaluators(
       }
     }
    
-
-    //IKT, FIXME: question for LCM guys - what is surface residual logic?? 
-    //IKT, FIXME: fix the following logic 
-    if (have_mech_eq_) {  // Composite Tet Mass Residual
+    if (have_mech_eq_) {  // Composite Tet Mass 
 
       Teuchos::RCP<Teuchos::ParameterList>
       p = Teuchos::rcp(new Teuchos::ParameterList("Composite Tet Mass Residual"));
@@ -1817,7 +1814,6 @@ MechanicsProblem::constructEvaluators(
       p->set<std::string>("Weighted Gradient BF Name", "wGrad BF");
       p->set<std::string>("Weighted BF Name", "wBF");
       p->set<std::string>("Acceleration Name", "Acceleration");
-
       // Mechanics residual need value of density for transient analysis.
       // Get it from material. Assumed constant in element block.
       if (material_db_->isElementBlockParam(eb_name, "Density")) {
@@ -1832,7 +1828,7 @@ MechanicsProblem::constructEvaluators(
       ev = Teuchos::rcp(
           new LCM::CompositeTetMassResidual<EvalT, PHAL::AlbanyTraits>(*p, dl_));
       fm0.template registerEvaluator<EvalT>(ev);
-    } // end if (have_mech_eq_) //IKT, FIXME 
+    } // end if (have_mech_eq_)  
 
     if (have_mech_eq_) {  // Residual
 
@@ -1846,6 +1842,7 @@ MechanicsProblem::constructEvaluators(
       p->set<std::string>("Acceleration Name", "Acceleration");
       p->set<std::string>("Body Force Name", "Body Force");
       p->set<std::string>("Composite Tet Mass Name", "Composite Tet Mass Residual");
+      p->set<bool>("Use Composite Tet", composite);
       if (Teuchos::nonnull(rc_mgr_)) {
         p->set<std::string>("DefGrad Name", defgrad);
         rc_mgr_->registerField(

@@ -205,30 +205,39 @@ evaluateFields(typename Traits::EvalData workset)
 #ifdef DEBUG_OUTPUT 
   *(this->out_) << "IKT CompositeTetMassResidual Jacobian Specialization evaluateFields!\n";
 #endif 
-  //IKT, FIXME: fill in!
+  bool interleaved = workset.use_interleaved_order;
+  double n_coeff = workset.n_coeff;
+#ifdef DEBUG_OUTPUT
+  *(this->out_) << "  IKT interleaved, n_coeff = " << interleaved << ", " << n_coeff << "\n"; 
+#endif 
   for (int cell = 0; cell < workset.numCells; ++cell) {
-    for (int node = 0; node < this->num_nodes_; ++node) {
+    for (int node = 0; node < this->num_nodes_; ++node) { //loop over Jacobian rows 
+      const std::vector<double> mass_row = this->compositeTetLocalMassRow(node); 
       for (int dim = 0; dim < this->num_dims_; ++dim) {
-        (this->ct_mass_)(cell, node, dim) = ScalarT(0);
+        typename PHAL::Ref<ScalarT>::type valref = (this->ct_mass_)(cell,node,dim); //get Jacobian row 
+        int k;
+        for (int i=0; i < this->num_nodes_; ++i) { //loop over Jacobian cols 
+          for (int j=0; j < this->num_dims_; j++) {
+            if (interleaved == true) k = i*this->num_dims_ + j;
+            else k = j*this->num_nodes_ + i;
+            valref.fastAccessDx(k) = n_coeff*mass_row[i];
+          }
+        }
       }
     }
   }
-  //For now, just checking that can call rout_ine
-  const std::vector<double> mass_row = this->compositeTetLocalMassRow(0); 
-  //For now, just checking that can modify Jacobian terms (AD values associated with residual) 
-  for (int node = 0; node < this->num_nodes_; ++node) {
-    for (int dim = 0; dim < this->num_dims_; ++dim) {
-      typename PHAL::Ref<ScalarT>::type valref = (this->ct_mass_)(0,node,dim);
-#ifdef DEBUG_OUTPUT 
-      *(this->out_) << "IKT node, dim, resid = " << node << ", " << dim << ", " << (this->ct_mass_)(0, node, dim) << "\n";
-#endif 
-      //valref=FadType(valref.size(), 0);
-      valref.fastAccessDx(0) = 3.1415; 
-#ifdef DEBUG_OUTPUT 
-      *(this->out_) << "  IKT valref = " << valref << "\n";
-#endif 
+  
+#ifdef DEBUG_OUTPUT
+  for (int cell = 0; cell < workset.numCells; ++cell) {
+    if (cell == 0) {
+      for (int node = 0; node < this->num_nodes_; ++node) {
+        for (int dim = 0; dim < this->num_dims_; ++dim) {
+          *(this->out_) << "IKT node, dim, resid = " << node << ", " << dim << ", " << (this->ct_mass_)(cell, node, dim) << "\n";
+        }
+      }
     }
   } 
+#endif
 }
 
 // **********************************************************************

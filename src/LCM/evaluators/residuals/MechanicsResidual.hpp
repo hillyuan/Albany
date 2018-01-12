@@ -118,6 +118,11 @@ class MechanicsResidual : public PHX::EvaluatorWithBaseImpl<Traits>,
   bool enable_dynamics_;
 
   ///
+  /// Flag to mark if using composite tet
+  ///
+  bool use_composite_tet_; 
+
+  ///
   /// Input, if RCU.
   ///
   AAdapt::rc::Field<2> def_grad_rc_;
