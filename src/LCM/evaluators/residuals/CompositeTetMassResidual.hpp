@@ -17,7 +17,9 @@
 
 
 namespace LCM {
-/** \brief FIXME: fill in!
+/** \brief This evaluator computes the residual and Jacobian contributions
+ * coming from the analytic mass matrix (eqn. (C.4) in (Ostien et al, 2016))
+ * for the composite tet elements. 
 
 */
 // **************************************************************
@@ -43,10 +45,10 @@ protected:
   typedef typename EvalT::MeshScalarT MeshScalarT;
 
   /// Local function: return row of exact composite tet local mass (unscaled)
-  std::vector<double> compositeTetLocalMassRow(const int row) const;
+  std::vector<RealType> compositeTetLocalMassRow(const int row) const;
   /// Local function: returns \int w_bf d\Omega for a given cell as a given node, 
   //  needed to compute the volume of each element to multiply local mass by.
-  double computeElementVolScaling(const int cell, const int node) const; 
+  RealType computeElementVolScaling(const int cell, const int node) const; 
 
   /// Input: Weighted Basis Functions
   PHX::MDField<const MeshScalarT, Cell, Node, QuadPoint> w_bf_;
@@ -63,7 +65,7 @@ protected:
   /// Number of cells
   int num_cells_;
   /// Density
-  double density_{1.0};
+  RealType density_{1.0};
   /// Dynamics flag
   bool enable_dynamics_;
   /// FOS for debug output
@@ -125,7 +127,7 @@ public:
                               const Teuchos::RCP<Albany::Layouts>& dl);
   void evaluateFields(typename Traits::EvalData d);
 protected:
-  std::vector<double> compositeTetLocalMassRow(const int row) const;  
+  std::vector<RealType> compositeTetLocalMassRow(const int row) const;  
 private:
   typedef typename PHAL::AlbanyTraits::Tangent::ScalarT ScalarT;
 };

@@ -36,7 +36,7 @@ CompositeTetMassResidualBase(const Teuchos::ParameterList& p,
   *out_ << "IKT CompositeTetMassResidualBase! \n"; 
 #endif
   if (p.isParameter("Density"))  
-    density_ = p.get<double>("Density"); 
+    density_ = p.get<RealType>("Density"); 
 
   this->addDependentField(w_bf_);
   this->addEvaluatedField(ct_mass_);
@@ -85,10 +85,10 @@ postRegistrationSetup(typename Traits::SetupData d,
 }
 
 template<typename EvalT, typename Traits>
-std::vector<double> CompositeTetMassResidualBase<EvalT, Traits>::
+std::vector<RealType> CompositeTetMassResidualBase<EvalT, Traits>::
 compositeTetLocalMassRow(const int row) const 
 {
-  std::vector<double> mass_row(10); 
+  std::vector<RealType> mass_row(10); 
   //IKT, question for LCM guys: is ordering of nodes in Albany for composite
   //tet consistent with (C.4) in IJNME paper?  If not, may need to change
   //expression found here.
@@ -158,10 +158,10 @@ compositeTetLocalMassRow(const int row) const
 }
 
 template<typename EvalT, typename Traits>
-double CompositeTetMassResidualBase<EvalT, Traits>::
+RealType CompositeTetMassResidualBase<EvalT, Traits>::
 computeElementVolScaling(const int cell, const int node) const 
 {
-  double elt_vol_scale_at_node = 0.0; 
+  RealType elt_vol_scale_at_node = 0.0; 
   for (int pt = 0; pt < num_pts_; ++pt) {
     elt_vol_scale_at_node += w_bf_(cell, node, pt);
   }
@@ -230,8 +230,8 @@ evaluateFields(typename Traits::EvalData workset)
 #endif 
   for (int cell = 0; cell < workset.numCells; ++cell) {
     for (int node = 0; node < this->num_nodes_; ++node) { //loop over Jacobian rows 
-      const std::vector<double> mass_row = this->compositeTetLocalMassRow(node);
-      const double elt_vol_scale_node = this->computeElementVolScaling(cell, node); 
+      const std::vector<RealType> mass_row = this->compositeTetLocalMassRow(node);
+      const RealType elt_vol_scale_node = this->computeElementVolScaling(cell, node); 
       for (int dim = 0; dim < this->num_dims_; ++dim) {
         typename PHAL::Ref<ScalarT>::type valref = (this->ct_mass_)(cell,node,dim); //get Jacobian row 
         int k;
