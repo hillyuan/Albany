@@ -304,7 +304,7 @@ if (DOWNLOAD)
   set_property (GLOBAL PROPERTY SubProject Trilinos)
   set_property (GLOBAL PROPERTY Label Trilinos)
 
-  ctest_update(SOURCE "${CTEST_SOURCE_DIRECTORY}/Trilinos" RETURN_VALUE count)
+  CTEST_UPDATE(SOURCE "${CTEST_SOURCE_DIRECTORY}/Trilinos" RETURN_VALUE count)
   # assumes that we are already on the desired tracking branch, i.e.,
   # git checkout -b branch --track origin/branch
   message("Found ${count} changed files")
@@ -331,9 +331,8 @@ if (DOWNLOAD)
     set_property (GLOBAL PROPERTY SubProject SCOREC)
     set_property (GLOBAL PROPERTY Label SCOREC)
 
-    #set (CTEST_UPDATE_COMMAND "${CTEST_SVN_COMMAND}")
     set (CTEST_UPDATE_COMMAND "${CTEST_GIT_COMMAND}")
-    ctest_update(SOURCE "${CTEST_SOURCE_DIRECTORY}/Trilinos/SCOREC" RETURN_VALUE count)
+    CTEST_UPDATE(SOURCE "${CTEST_SOURCE_DIRECTORY}/Trilinos/SCOREC" RETURN_VALUE count)
     # assumes that we are already on the desired tracking branch, i.e.,
     # git checkout -b branch --track origin/branch
     message("Found ${count} changed files")
@@ -384,7 +383,7 @@ if (DOWNLOAD)
     set_property (GLOBAL PROPERTY Label Peridigm)
 
     set (CTEST_UPDATE_COMMAND "${CTEST_GIT_COMMAND}")
-    ctest_update (SOURCE "${CTEST_SOURCE_DIRECTORY}/Peridigm" RETURN_VALUE count)
+    CTEST_UPDATE (SOURCE "${CTEST_SOURCE_DIRECTORY}/Peridigm" RETURN_VALUE count)
     message ("Found ${count} changed files")
     if (count LESS 0)
       set (BUILD_PERIDIGM FALSE)
