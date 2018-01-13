@@ -47,9 +47,9 @@ CompositeTetMassResidualBase(const Teuchos::ParameterList& p,
     enable_dynamics_ = true;
 
   if (enable_dynamics_) {
-    acceleration_ = decltype(acceleration_)(
+    accel_qps_ = decltype(accel_qps_)(
         p.get<std::string>("Acceleration Name"), dl->qp_vector);
-    this->addDependentField(acceleration_);
+    this->addDependentField(accel_qps_);
   }
 
   this->setName("CompositeTetMassResidual" + PHX::typeAsString<EvalT>());
@@ -80,7 +80,7 @@ postRegistrationSetup(typename Traits::SetupData d,
   this->utils.setFieldData(w_bf_, fm);
   this->utils.setFieldData(ct_mass_, fm);
   if (enable_dynamics_) {
-    this->utils.setFieldData(acceleration_, fm);
+    this->utils.setFieldData(accel_qps_, fm);
   }
 }
 
@@ -198,11 +198,14 @@ evaluateFields(typename Traits::EvalData workset)
      for (int pt = 0; pt < this->num_pts_; ++pt) {
        for (int dim = 0; dim < this->num_dims_; ++dim) {
          (this->ct_mass_)(cell, node, dim) +=
-           (this->density_) * (this->acceleration_)(cell, pt, dim) * (this->w_bf_)(cell, node, pt);
+           (this->density_) * (this->accel_qps_)(cell, pt, dim) * (this->w_bf_)(cell, node, pt);
        }
      }
    }
  }
+ //IKT, question for LCM guys: I think to have alternate implementation of residual, we need 
+ //acceleration at the nodes (right?), which we do not have here. It can be obtained by interpolating
+ //from quad points to nodes.
 }
 
 // **********************************************************************

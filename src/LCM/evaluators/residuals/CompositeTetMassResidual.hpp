@@ -52,8 +52,8 @@ protected:
 
   /// Input: Weighted Basis Functions
   PHX::MDField<const MeshScalarT, Cell, Node, QuadPoint> w_bf_;
-  /// Input: acceleration
-  PHX::MDField<const ScalarT, Cell, QuadPoint, Dim> acceleration_;
+  /// Input: acceleration at quad points 
+  PHX::MDField<const ScalarT, Cell, QuadPoint, Dim> accel_qps_;
   /// Output: Composite Tet Mass contribution to residual/Jacobian 
   PHX::MDField<ScalarT, Cell, Node, Dim> ct_mass_;
   /// Number of element nodes
