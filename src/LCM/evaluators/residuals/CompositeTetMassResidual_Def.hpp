@@ -86,6 +86,64 @@ postRegistrationSetup(typename Traits::SetupData d,
 
 template<typename EvalT, typename Traits>
 std::vector<RealType> CompositeTetMassResidualBase<EvalT, Traits>::
+hexLocalMassRow(const int row) const 
+{
+  std::vector<RealType> mass_row(8);
+  switch(row) {
+    case 0: 
+      mass_row[0] = 8.0; mass_row[1] = 4.0; mass_row[2] = 2.0; 
+      mass_row[3] = 4.0; mass_row[4] = 4.0; mass_row[5] = 2.0; 
+      mass_row[6] = 1.0; mass_row[7] = 2.0; 
+      break; 
+    case 1: 
+      mass_row[0] = 4.0; mass_row[1] = 8.0; mass_row[2] = 4.0; 
+      mass_row[3] = 2.0; mass_row[4] = 2.0; mass_row[5] = 4.0; 
+      mass_row[6] = 2.0; mass_row[7] = 1.0; 
+      break;
+    case 2:
+      mass_row[0] = 2.0; mass_row[1] = 4.0; mass_row[2] = 8.0; 
+      mass_row[3] = 4.0; mass_row[4] = 1.0; mass_row[5] = 2.0; 
+      mass_row[6] = 4.0; mass_row[7] = 2.0; 
+      break; 
+    case 3:
+      mass_row[0] = 4.0; mass_row[1] = 2.0; mass_row[2] = 4.0; 
+      mass_row[3] = 8.0; mass_row[4] = 2.0; mass_row[5] = 1.0; 
+      mass_row[6] = 2.0; mass_row[7] = 4.0; 
+      break; 
+    case 4:
+      mass_row[0] = 4.0; mass_row[1] = 2.0; mass_row[2] = 1.0; 
+      mass_row[3] = 2.0; mass_row[4] = 8.0; mass_row[5] = 4.0; 
+      mass_row[6] = 2.0; mass_row[7] = 4.0; 
+      break; 
+    case 5: 
+      mass_row[0] = 2.0; mass_row[1] = 4.0; mass_row[2] = 2.0; 
+      mass_row[3] = 1.0; mass_row[4] = 4.0; mass_row[5] = 8.0;
+      mass_row[6] = 4.0; mass_row[7] = 2.0; 
+      break; 
+    case 6: 
+      mass_row[0] = 1.0; mass_row[1] = 2.0; mass_row[2] = 4.0; 
+      mass_row[3] = 2.0; mass_row[4] = 2.0; mass_row[5] = 4.0; 
+      mass_row[6] = 8.0; mass_row[7] = 4.0; 
+      break; 
+    case 7: 
+      mass_row[0] = 2.0; mass_row[1] = 1.0; mass_row[2] = 2.0; 
+      mass_row[3] = 4.0; mass_row[4] = 4.0; mass_row[5] = 2.0; 
+      mass_row[6] = 4.0; mass_row[7] = 8.0; 
+      break; 
+    default: 
+      TEUCHOS_TEST_FOR_EXCEPTION (true, std::logic_error,
+                                  "Error! invalid value row = " << row << " to compositeTetLocalMassRow! \n"
+                                  << "Row must be between 0 and 7.\n"); 
+  }
+  for (int i=0; i<8; i++) {
+    mass_row[i] /= 27.0; 
+  }
+  return mass_row; 
+}
+
+ 
+template<typename EvalT, typename Traits>
+std::vector<RealType> CompositeTetMassResidualBase<EvalT, Traits>::
 compositeTetLocalMassRow(const int row) const 
 {
   std::vector<RealType> mass_row(10); 
@@ -204,8 +262,9 @@ evaluateFields(typename Traits::EvalData workset)
    }
  }
  //IKT, question for LCM guys: I think to have alternate implementation of residual, we need 
- //acceleration at the nodes (right?), which we do not have here. It can be obtained by interpolating
- //from quad points to nodes.
+ //acceleration at the nodes (right?), which we do not have here. It can be obtained by 
+ //interpolating from quad points to nodes, or from workset.xdotdot, but in the latter 
+ //case we would need to use the connectivity to pick off the relevant local values.
 }
 
 // **********************************************************************
