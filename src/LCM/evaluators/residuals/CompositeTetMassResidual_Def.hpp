@@ -42,9 +42,9 @@ CompositeTetMassResidualBase(const Teuchos::ParameterList& p,
   if (p.isParameter("Density"))  
     density_ = p.get<double>("Density"); 
 
+
   this->addDependentField(w_grad_bf_);
   this->addDependentField(w_bf_);
-
   this->addEvaluatedField(ct_mass_);
 
   if (p.isType<bool>("Disable Dynamics"))
@@ -161,6 +161,21 @@ compositeTetLocalMassRow(const int row) const
   return mass_row; 
 }
 
+template<typename EvalT, typename Traits>
+double CompositeTetMassResidualBase<EvalT, Traits>::
+computeElementVolScaling(const int cell, const int node) const 
+{
+  double elt_vol_scale_at_node = 0.0; 
+  for (int pt = 0; pt < num_pts_; ++pt) {
+    elt_vol_scale_at_node += w_bf_(cell, node, pt);
+  }
+#ifdef DEBUG_OUTPUT
+  if (cell == 0) 
+    *out_ << "  IKT node, elt_vol_scale_at_node = " << node << ", " << elt_vol_scale_at_node << "\n"; 
+#endif
+  return elt_vol_scale_at_node; 
+}
+
 // **********************************************************************
 // Specialization: Residual
 // **********************************************************************
@@ -212,7 +227,8 @@ evaluateFields(typename Traits::EvalData workset)
 #endif 
   for (int cell = 0; cell < workset.numCells; ++cell) {
     for (int node = 0; node < this->num_nodes_; ++node) { //loop over Jacobian rows 
-      const std::vector<double> mass_row = this->compositeTetLocalMassRow(node); 
+      const std::vector<double> mass_row = this->compositeTetLocalMassRow(node);
+      const double elt_vol_scale_node = this->computeElementVolScaling(cell, node); 
       for (int dim = 0; dim < this->num_dims_; ++dim) {
         typename PHAL::Ref<ScalarT>::type valref = (this->ct_mass_)(cell,node,dim); //get Jacobian row 
         int k;
@@ -220,7 +236,7 @@ evaluateFields(typename Traits::EvalData workset)
           for (int j=0; j < this->num_dims_; j++) {
             if (interleaved == true) k = i*this->num_dims_ + j;
             else k = j*this->num_nodes_ + i;
-            valref.fastAccessDx(k) = n_coeff*mass_row[i];
+            valref.fastAccessDx(k) = n_coeff*mass_row[i]*(this->density_)*elt_vol_scale_node;
           }
         }
       }
@@ -238,6 +254,7 @@ evaluateFields(typename Traits::EvalData workset)
     }
   } 
 #endif
+//------------------------------------------------------------------------------
 }
 
 // **********************************************************************
