@@ -28,22 +28,16 @@ CompositeTetMassResidualBase<EvalT, Traits>::
 CompositeTetMassResidualBase(const Teuchos::ParameterList& p,
                               const Teuchos::RCP<Albany::Layouts>& dl)
  :
-      w_grad_bf_(
-          p.get<std::string>("Weighted Gradient BF Name"),
-          dl->node_qp_vector),
       w_bf_(p.get<std::string>("Weighted BF Name"), dl->node_qp_scalar),
       ct_mass_(p.get<std::string>("Composite Tet Mass Name"), dl->node_vector), 
       out_(Teuchos::VerboseObjectBase::getDefaultOStream())
 {
-  //IKT, FIXME: modify this as needed!
 #ifdef DEBUG_OUTPUT 
   *out_ << "IKT CompositeTetMassResidualBase! \n"; 
 #endif
   if (p.isParameter("Density"))  
     density_ = p.get<double>("Density"); 
 
-
-  this->addDependentField(w_grad_bf_);
   this->addDependentField(w_bf_);
   this->addEvaluatedField(ct_mass_);
 
@@ -61,11 +55,16 @@ CompositeTetMassResidualBase(const Teuchos::ParameterList& p,
   this->setName("CompositeTetMassResidual" + PHX::typeAsString<EvalT>());
 
 
+  Teuchos::RCP<PHX::DataLayout> vector_dl = dl->node_qp_vector;
   std::vector<PHX::DataLayout::size_type> dims;
-  w_grad_bf_.fieldTag().dataLayout().dimensions(dims);
+  vector_dl->dimensions(dims);
   num_nodes_ = dims[1];
   num_pts_   = dims[2];
   num_dims_  = dims[3];
+  num_cells_ = dims[0]; 
+#ifdef DEBUG_OUTPUT
+  *out_ << "IKT num_cells_, num_nodes, num_pts_, num_dims = " << num_cells_ << ", " << num_nodes_ << ", " << num_pts_ << ", " << num_dims_ << "\n"; 
+#endif
 
   Teuchos::RCP<ParamLib> paramLib =
       p.get<Teuchos::RCP<ParamLib>>("Parameter Library");
@@ -78,9 +77,6 @@ void CompositeTetMassResidualBase<EvalT, Traits>::
 postRegistrationSetup(typename Traits::SetupData d,
                       PHX::FieldManager<Traits>& fm)
 {
-  //IKT, FIXME: modify this as needed!
-  
-  this->utils.setFieldData(w_grad_bf_, fm);
   this->utils.setFieldData(w_bf_, fm);
   this->utils.setFieldData(ct_mass_, fm);
   if (enable_dynamics_) {
@@ -193,13 +189,20 @@ evaluateFields(typename Traits::EvalData workset)
 #ifdef DEBUG_OUTPUT 
   *(this->out_) << "IKT CompositeTetMassResidual Residual Specialization evaluateFields!\n";
 #endif 
-  for (int cell = 0; cell < workset.numCells; ++cell) {
-    for (int node = 0; node < this->num_nodes_; ++node) {
-      for (int dim = 0; dim < this->num_dims_; ++dim) {
-        (this->ct_mass_)(cell, node, dim) = ScalarT(0);
-      }
-    }
-  }
+ //IKT, FIXME: the following uses numerical cubature to compute the residual contribution.
+ //This can also be done using the mass matrix: r = rho*M*a.  This second approach
+ //needs to be implemented, and checked if it gives the same result as this first approach
+ //for the composite tets. 
+ for (int cell = 0; cell < workset.numCells; ++cell) {
+   for (int node = 0; node < this->num_nodes_; ++node) {
+     for (int pt = 0; pt < this->num_pts_; ++pt) {
+       for (int dim = 0; dim < this->num_dims_; ++dim) {
+         (this->ct_mass_)(cell, node, dim) +=
+           (this->density_) * (this->acceleration_)(cell, pt, dim) * (this->w_bf_)(cell, node, pt);
+       }
+     }
+   }
+ }
 }
 
 // **********************************************************************

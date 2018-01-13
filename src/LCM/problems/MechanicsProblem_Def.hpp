@@ -1811,7 +1811,6 @@ MechanicsProblem::constructEvaluators(
       p = Teuchos::rcp(new Teuchos::ParameterList("Composite Tet Mass Residual"));
 
       // Input
-      p->set<std::string>("Weighted Gradient BF Name", "wGrad BF");
       p->set<std::string>("Weighted BF Name", "wBF");
       p->set<std::string>("Acceleration Name", "Acceleration");
       // Mechanics residual need value of density for transient analysis.

@@ -48,8 +48,6 @@ protected:
   //  needed to compute the volume of each element to multiply local mass by.
   double computeElementVolScaling(const int cell, const int node) const; 
 
-  /// Input: Weighted Basis Function Gradients
-  PHX::MDField<const MeshScalarT, Cell, Node, QuadPoint, Dim> w_grad_bf_;
   /// Input: Weighted Basis Functions
   PHX::MDField<const MeshScalarT, Cell, Node, QuadPoint> w_bf_;
   /// Input: acceleration
@@ -62,6 +60,8 @@ protected:
   int num_pts_;
   /// Number of spatial dimensions
   int num_dims_;
+  /// Number of cells
+  int num_cells_;
   /// Density
   double density_{1.0};
   /// Dynamics flag
