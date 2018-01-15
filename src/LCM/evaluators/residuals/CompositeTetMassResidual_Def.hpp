@@ -135,7 +135,7 @@ hexLocalMassRow(const int row) const
                                   "Error! invalid value row = " << row << " to compositeTetLocalMassRow! \n"
                                   << "Row must be between 0 and 7.\n"); 
   }
-  for (int i=0; i<8; i++) {
+  for (int i=0; i<mass_row.size(); i++) {
     mass_row[i] /= 27.0; 
   }
   return mass_row; 
@@ -292,17 +292,16 @@ evaluateFields(typename Traits::EvalData workset)
 #endif 
   for (int cell = 0; cell < workset.numCells; ++cell) {
     for (int node = 0; node < this->num_nodes_; ++node) { //loop over Jacobian rows 
-      const std::vector<RealType> mass_row = this->compositeTetLocalMassRow(node);
+      //const std::vector<RealType> mass_row = this->compositeTetLocalMassRow(node);
+      const std::vector<RealType> mass_row = this->hexLocalMassRow(node);
       const RealType elt_vol_scale_node = this->computeElementVolScaling(cell, node); 
       for (int dim = 0; dim < this->num_dims_; ++dim) {
         typename PHAL::Ref<ScalarT>::type valref = (this->ct_mass_)(cell,node,dim); //get Jacobian row 
         int k;
         for (int i=0; i < this->num_nodes_; ++i) { //loop over Jacobian cols 
-          for (int j=0; j < this->num_dims_; j++) {
-            if (interleaved == true) k = i*this->num_dims_ + j;
-            else k = j*this->num_nodes_ + i;
-            valref.fastAccessDx(k) = n_coeff*mass_row[i]*(this->density_)*elt_vol_scale_node;
-          }
+          if (interleaved == true) k = i*this->num_dims_ + dim;
+          else k = dim*this->num_nodes_ + i;
+          valref.fastAccessDx(k) = n_coeff*mass_row[i]*(this->density_)*elt_vol_scale_node;
         }
       }
     }
@@ -313,7 +312,7 @@ evaluateFields(typename Traits::EvalData workset)
     if (cell == 0) {
       for (int node = 0; node < this->num_nodes_; ++node) {
         for (int dim = 0; dim < this->num_dims_; ++dim) {
-          *(this->out_) << "IKT node, dim, resid = " << node << ", " << dim << ", " << (this->ct_mass_)(cell, node, dim) << "\n";
+          *(this->out_) << "IKT node, dim, ct_mass = " << node << ", " << dim << ", " << (this->ct_mass_)(cell, node, dim) << "\n";
         }
       }
     }
