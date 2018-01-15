@@ -37,6 +37,10 @@ MechanicsResidual<EvalT, Traits>::MechanicsResidual(
       use_composite_tet_(false),
       density_(p.get<RealType>("Density", 1.0))
 {
+  Teuchos::RCP<Teuchos::FancyOStream> out = Teuchos::VerboseObjectBase::getDefaultOStream();
+#ifdef DEBUG_OUTPUT
+  *out << "IKT use_composite_tet_ = " << use_composite_tet_ << "\n";  
+#endif 
   this->addDependentField(stress_);
   this->addDependentField(w_grad_bf_);
   this->addDependentField(w_bf_);

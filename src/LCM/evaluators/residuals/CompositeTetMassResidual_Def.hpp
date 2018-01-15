@@ -14,13 +14,8 @@
 #include <chrono>
 #endif
 
-
 //IKT: uncomment the following for debug output
 //#define DEBUG_OUTPUT
-
-//IKT: uncomment the following if testing hex8 exact mass for 
-//debugging purposes.  Otherwise, we use composite tet exact mass. 
-//#define USE_HEX8 
 
 // **********************************************************************
 // Base Class Generic Implemtation
@@ -235,6 +230,48 @@ computeElementVolScaling(const int cell, const int node) const
   return elt_vol_scale_at_node; 
 }
 
+template<typename EvalT, typename Traits>
+void CompositeTetMassResidualBase<EvalT, Traits>::
+computeResidualValue(typename Traits::EvalData workset) const 
+{
+  //Zero out ct_mass_ 
+  for (int cell = 0; cell < workset.numCells; ++cell) {
+    for (int node = 0; node < this->num_nodes_; ++node) {
+      for (int dim = 0; dim < this->num_dims_; ++dim) {
+        (this->ct_mass_)(cell,node,dim) = ScalarT(0.0);
+      }
+    }
+  }
+  //IKT, FIXME: the following uses numerical cubature to compute the residual contribution.
+  //This can also be done using the mass matrix: r = rho*M*a.  This second approach
+  //needs to be implemented, and checked if it gives the same result as this first approach
+  //for the composite tets. 
+  for (int cell = 0; cell < workset.numCells; ++cell) {
+    for (int node = 0; node < this->num_nodes_; ++node) {
+      for (int pt = 0; pt < this->num_pts_; ++pt) {
+        for (int dim = 0; dim < this->num_dims_; ++dim) {
+          (this->ct_mass_)(cell, node, dim) +=
+            (this->density_) * (this->accel_qps_)(cell, pt, dim) * (this->w_bf_)(cell, node, pt);
+        }
+      }
+    }
+  }
+  //IKT, question for LCM guys: I think to have alternate implementation of residual, we need 
+  //acceleration at the nodes (right?), which we do not have here. It can be obtained by 
+  //interpolating from quad points to nodes, or from workset.xdotdot, but in the latter 
+#ifdef DEBUG_OUTPUT
+  for (int cell = 0; cell < workset.numCells; ++cell) {
+    if (cell == 0) {
+      for (int node = 0; node < this->num_nodes_; ++node) {
+        for (int dim = 0; dim < this->num_dims_; ++dim) {
+          *(this->out_) << "IKT node, dim, ct_mass = " << node << ", " << dim << ", " << (this->ct_mass_)(cell, node, dim) << "\n";
+        }
+      }
+    }
+  } 
+#endif
+}
+
 // **********************************************************************
 // Specialization: Residual
 // **********************************************************************
@@ -251,45 +288,8 @@ evaluateFields(typename Traits::EvalData workset)
 {
 #ifdef DEBUG_OUTPUT 
   *(this->out_) << "IKT CompositeTetMassResidual Residual Specialization evaluateFields!\n";
-#endif 
- //Zero out ct_mass_ 
- for (int cell = 0; cell < workset.numCells; ++cell) {
-    for (int node = 0; node < this->num_nodes_; ++node) {
-      for (int dim = 0; dim < this->num_dims_; ++dim) {
-        (this->ct_mass_)(cell,node,dim) = ScalarT(0.0);
-      }
-    }
- }
- //IKT, FIXME: the following uses numerical cubature to compute the residual contribution.
- //This can also be done using the mass matrix: r = rho*M*a.  This second approach
- //needs to be implemented, and checked if it gives the same result as this first approach
- //for the composite tets. 
- for (int cell = 0; cell < workset.numCells; ++cell) {
-   for (int node = 0; node < this->num_nodes_; ++node) {
-     for (int pt = 0; pt < this->num_pts_; ++pt) {
-       for (int dim = 0; dim < this->num_dims_; ++dim) {
-         (this->ct_mass_)(cell, node, dim) +=
-           (this->density_) * (this->accel_qps_)(cell, pt, dim) * (this->w_bf_)(cell, node, pt);
-       }
-     }
-   }
- }
- //IKT, question for LCM guys: I think to have alternate implementation of residual, we need 
- //acceleration at the nodes (right?), which we do not have here. It can be obtained by 
- //interpolating from quad points to nodes, or from workset.xdotdot, but in the latter 
- //case we would need to use the connectivity to pick off the relevant local values.
-#ifdef DEBUG_OUTPUT
-  for (int cell = 0; cell < workset.numCells; ++cell) {
-    if (cell == 0) {
-      for (int node = 0; node < this->num_nodes_; ++node) {
-        for (int dim = 0; dim < this->num_dims_; ++dim) {
-          *(this->out_) << "IKT node, dim, ct_mass = " << node << ", " << dim << ", " << (this->ct_mass_)(cell, node, dim) << "\n";
-        }
-      }
-    }
-  } 
 #endif
-//------------------------------------------------------------------------------
+  this->computeResidualValue(workset);  
 }
 
 // **********************************************************************
@@ -311,28 +311,10 @@ evaluateFields(typename Traits::EvalData workset)
   *(this->out_) << "IKT CompositeTetMassResidual Jacobian Specialization evaluateFields!\n";
 #endif
 
-  //IKT, FIXME: there is code duplication here from the Residual specialization. 
-  //It should be possible to call residual specialization to avoid the code duplication. 
+  //Compute residual value 
+  this->computeResidualValue(workset);  
  
-  //IKT, FIXME: the following uses numerical cubature to compute the residual contribution.
-  //This can also be done using the mass matrix: r = rho*M*a.  This second approach
-  //needs to be implemented, and checked if it gives the same result as this first approach
-  //for the composite tets. 
-  for (int cell = 0; cell < workset.numCells; ++cell) {
-    for (int node = 0; node < this->num_nodes_; ++node) {
-      for (int pt = 0; pt < this->num_pts_; ++pt) {
-        for (int dim = 0; dim < this->num_dims_; ++dim) {
-          (this->ct_mass_)(cell, node, dim) +=
-            (this->density_) * (this->accel_qps_)(cell, pt, dim) * (this->w_bf_)(cell, node, pt);
-        }
-      }
-    }
-  }
-  //IKT, question for LCM guys: I think to have alternate implementation of residual, we need 
-  //acceleration at the nodes (right?), which we do not have here. It can be obtained by 
-  //interpolating from quad points to nodes, or from workset.xdotdot, but in the latter 
-  //case we would need to use the connectivity to pick off the relevant local values.
- 
+  //Set local Jacobian entries 
   bool interleaved = workset.use_interleaved_order;
   double n_coeff = workset.n_coeff;
 #ifdef DEBUG_OUTPUT

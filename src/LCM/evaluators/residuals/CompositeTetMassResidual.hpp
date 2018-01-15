@@ -14,7 +14,9 @@
 #include <Sacado_ParameterAccessor.hpp>
 #include "Albany_Layouts.hpp"
 
-
+//IKT: uncomment the following if testing hex8 exact mass for 
+//debugging purposes.  Otherwise, we use composite tet exact mass. 
+//#define USE_HEX8 
 
 namespace LCM {
 /** \brief This evaluator computes the residual and Jacobian contributions
@@ -53,6 +55,8 @@ protected:
   /// Local function: returns \int w_bf d\Omega for a given cell as a given node, 
   //  needed to compute the volume of each element to multiply local mass by.
   RealType computeElementVolScaling(const int cell, const int node) const; 
+  /// Local function
+  void computeResidualValue(typename Traits::EvalData workset) const; 
 
   /// Input: Weighted Basis Functions
   PHX::MDField<const MeshScalarT, Cell, Node, QuadPoint> w_bf_;
