@@ -49,6 +49,9 @@ CompositeTetMassResidualBase(const Teuchos::ParameterList& p,
     accel_qps_ = decltype(accel_qps_)(
         p.get<std::string>("Acceleration Name"), dl->qp_vector);
     this->addDependentField(accel_qps_);
+    accel_nodes_ = decltype(accel_nodes_)(
+        p.get<std::string>("Acceleration Name"), dl->node_vector);
+    this->addDependentField(accel_nodes_);
   }
 
   this->setName("CompositeTetMassResidual" + PHX::typeAsString<EvalT>());
@@ -80,6 +83,7 @@ postRegistrationSetup(typename Traits::SetupData d,
   this->utils.setFieldData(ct_mass_, fm);
   if (enable_dynamics_) {
     this->utils.setFieldData(accel_qps_, fm);
+    this->utils.setFieldData(accel_nodes_, fm);
   }
 }
 

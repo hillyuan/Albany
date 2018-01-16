@@ -55,13 +55,16 @@ protected:
   /// Local function: returns \int w_bf d\Omega for a given cell as a given node, 
   //  needed to compute the volume of each element to multiply local mass by.
   RealType computeElementVolScaling(const int cell, const int node) const; 
-  /// Local function
+  /// Local function: helper function for computing value of residual to 
+  //  minimize code duplication b/w Residual and Jacobian specializations.
   void computeResidualValue(typename Traits::EvalData workset) const; 
 
   /// Input: Weighted Basis Functions
   PHX::MDField<const MeshScalarT, Cell, Node, QuadPoint> w_bf_;
   /// Input: acceleration at quad points 
   PHX::MDField<const ScalarT, Cell, QuadPoint, Dim> accel_qps_;
+  /// Input: acceleration at nodes 
+  PHX::MDField<const ScalarT, Cell, Node, Dim> accel_nodes_;
   /// Output: Composite Tet Mass contribution to residual/Jacobian 
   PHX::MDField<ScalarT, Cell, Node, Dim> ct_mass_;
   /// Number of element nodes
