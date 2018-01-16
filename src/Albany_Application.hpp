@@ -41,7 +41,7 @@
 
 #include "PHAL_AlbanyTraits.hpp"
 #include "PHAL_Workset.hpp"
-#include <set> 
+#include <set>
 
 #if defined(ALBANY_EPETRA)
 
@@ -177,6 +177,8 @@ public:
   int getNumEquations() const { return neq; }
   int getSpatialDimension() const { return spatial_dimension; }
   int getTangentDerivDimension() const { return tangent_deriv_dim; }
+
+  Teuchos::RCP<Albany::AbstractDiscretization> getDisc() const { return disc; }
 
   //! Get response function
   Teuchos::RCP<AbstractResponseFunction> getResponse(int i) const;
@@ -657,7 +659,9 @@ private:
 
   std::vector<double> prev_times_;
   
-  bool interleaved_; 
+  bool interleaved_;
+ 
+  bool MOR_apply_bcs_{true};
 
 protected:
   
