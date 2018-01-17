@@ -333,10 +333,9 @@ evaluateFields(typename Traits::EvalData workset)
   this->computeResidualValue(workset);  
  
   //Set local Jacobian entries 
-  bool interleaved = workset.use_interleaved_order;
   double n_coeff = workset.n_coeff;
 #ifdef DEBUG_OUTPUT
-  *(this->out_) << "  IKT interleaved, n_coeff = " << interleaved << ", " << n_coeff << "\n"; 
+  *(this->out_) << "  IKT n_coeff = " << ", " << n_coeff << "\n"; 
 #endif 
   for (int cell = 0; cell < workset.numCells; ++cell) {
     for (int node = 0; node < this->num_nodes_; ++node) { //loop over Jacobian rows
@@ -350,8 +349,7 @@ evaluateFields(typename Traits::EvalData workset)
         typename PHAL::Ref<ScalarT>::type valref = (this->ct_mass_)(cell,node,dim); //get Jacobian row 
         int k;
         for (int i=0; i < this->num_nodes_; ++i) { //loop over Jacobian cols 
-          if (interleaved == true) k = i*this->num_dims_ + dim;
-          else k = dim*this->num_nodes_ + i;
+          k = i*this->num_dims_ + dim;
           valref.fastAccessDx(k) = n_coeff*mass_row[i]*(this->density_)*elt_vol_scale_node;
         }
       }
