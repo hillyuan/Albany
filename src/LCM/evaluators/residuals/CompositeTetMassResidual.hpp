@@ -81,6 +81,9 @@ protected:
   bool enable_dynamics_;
   /// FOS for debug output
   Teuchos::RCP<Teuchos::FancyOStream> out_;
+  /// Boolean telling code whether to use cubature to compute residual
+  /// (if false, mass matrix will be used) 
+  bool resid_using_cub_; 
 };
 
 template<typename EvalT, typename Traits> class CompositeTetMassResidual;

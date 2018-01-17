@@ -37,6 +37,11 @@ CompositeTetMassResidualBase(const Teuchos::ParameterList& p,
   if (p.isParameter("Density"))  
     density_ = p.get<RealType>("Density"); 
 
+  resid_using_cub_ = p.get<bool>("Residual Computed Using Cubature"); 
+#ifdef DEBUG_OUTPUT 
+  *out_ << "IKT resid_using_cub = " << resid_using_cub_ << "\n"; 
+#endif
+
   this->addDependentField(w_bf_);
   this->addEvaluatedField(ct_mass_);
 
@@ -151,13 +156,6 @@ std::vector<RealType> CompositeTetMassResidualBase<EvalT, Traits>::
 compositeTetLocalMassRow(const int row) const 
 {
   std::vector<RealType> mass_row(10); 
-  //IKT, question for LCM guys: is ordering of nodes in Albany for composite
-  //tet consistent with (C.4) in IJNME paper?  If not, may need to change
-  //expression found here.
-  //IKT, question for LCM guys: what do mass matrix entries need to be 
-  //multiplied by?  I believe element mass is density_*jacobian_det.
-  //IKT, question for LCM guys: how to modify residual to have effect of mass 
-  //matrix / dDot term??
   switch(row) {
     case 0: 
       mass_row[0] = 1.0/80.0; mass_row[4] = 1.0/160.0;
@@ -246,23 +244,38 @@ computeResidualValue(typename Traits::EvalData workset) const
       }
     }
   }
-  //IKT, FIXME: the following uses numerical cubature to compute the residual contribution.
-  //This can also be done using the mass matrix: r = rho*M*a.  This second approach
-  //needs to be implemented, and checked if it gives the same result as this first approach
-  //for the composite tets. 
-  for (int cell = 0; cell < workset.numCells; ++cell) {
-    for (int node = 0; node < this->num_nodes_; ++node) {
-      for (int pt = 0; pt < this->num_pts_; ++pt) {
-        for (int dim = 0; dim < this->num_dims_; ++dim) {
-          (this->ct_mass_)(cell, node, dim) +=
-            (this->density_) * (this->accel_qps_)(cell, pt, dim) * (this->w_bf_)(cell, node, pt);
+  if (resid_using_cub_ == true) {
+    //Approach 1: uses numerical cubature to compute residual contribution 
+    for (int cell = 0; cell < workset.numCells; ++cell) {
+      for (int node = 0; node < this->num_nodes_; ++node) {
+        for (int pt = 0; pt < this->num_pts_; ++pt) {
+          for (int dim = 0; dim < this->num_dims_; ++dim) {
+            (this->ct_mass_)(cell, node, dim) +=
+              (this->density_) * (this->accel_qps_)(cell, pt, dim) * (this->w_bf_)(cell, node, pt);
+          }
         }
       }
     }
   }
-  //IKT, question for LCM guys: I think to have alternate implementation of residual, we need 
-  //acceleration at the nodes (right?), which we do not have here. It can be obtained by 
-  //interpolating from quad points to nodes, or from workset.xdotdot, but in the latter 
+  else {
+    //Approach 2: uses mass matrix to compute residual contribution (r = rho*M*a)
+    for (int cell = 0; cell < workset.numCells; ++cell) {
+      for (int node = 0; node < this->num_nodes_; ++node) { //loop over rows
+#ifdef USE_HEX8 
+        const std::vector<RealType> mass_row = this->hexLocalMassRow(node);
+#else
+        const std::vector<RealType> mass_row = this->compositeTetLocalMassRow(node);
+#endif
+        for (int dim = 0; dim < this->num_dims_; ++dim) {
+          ScalarT val = 0.0; 
+          for (int i = 0; i < this->num_nodes_; ++i) { //loop over columns
+            val += (this->density_)*mass_row[i]*accel_nodes_(cell, i, dim); 
+          }
+          (this->ct_mass_)(cell, node, dim) += val; 
+        }
+      }
+    }
+  }
 #ifdef DEBUG_OUTPUT
   for (int cell = 0; cell < workset.numCells; ++cell) {
     if (cell == 0) {

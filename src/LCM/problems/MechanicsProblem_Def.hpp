@@ -209,7 +209,7 @@ MechanicsProblem::constructEvaluators(
       eb_name, "Use Composite Tet 10", false);
 
   pFromProb->set<bool>("Use Composite Tet 10", composite);
-
+  
   // set flag for small strain option
   bool
   small_strain{material_model_name == "Linear Elastic"};
@@ -1820,6 +1820,11 @@ MechanicsProblem::constructEvaluators(
             "Density", 
             material_db_->getElementBlockParam<RealType>(eb_name, "Density"));
       }
+      bool resid_using_cub = material_db_->getElementBlockParam<bool>(
+           eb_name, "Residual Computed Using Cubature", true);
+
+      p->set<bool>("Residual Computed Using Cubature", resid_using_cub);
+  
 
       p->set<Teuchos::RCP<ParamLib>>("Parameter Library", paramLib);
       // Output
