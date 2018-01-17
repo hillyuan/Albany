@@ -1821,7 +1821,7 @@ MechanicsProblem::constructEvaluators(
             material_db_->getElementBlockParam<RealType>(eb_name, "Density"));
       }
       bool resid_using_cub = material_db_->getElementBlockParam<bool>(
-           eb_name, "Residual Computed Using Cubature", true);
+           eb_name, "Residual Computed Using Cubature", false);
 
       p->set<bool>("Residual Computed Using Cubature", resid_using_cub);
   

@@ -266,10 +266,11 @@ computeResidualValue(typename Traits::EvalData workset) const
 #else
         const std::vector<RealType> mass_row = this->compositeTetLocalMassRow(node);
 #endif
+        const RealType elt_vol_scale_node = this->computeElementVolScaling(cell, node); 
         for (int dim = 0; dim < this->num_dims_; ++dim) {
           ScalarT val = 0.0; 
           for (int i = 0; i < this->num_nodes_; ++i) { //loop over columns
-            val += (this->density_)*mass_row[i]*accel_nodes_(cell, i, dim); 
+            val += (this->density_)*elt_vol_scale_node*mass_row[i]*accel_nodes_(cell, i, dim); 
           }
           (this->ct_mass_)(cell, node, dim) += val; 
         }
