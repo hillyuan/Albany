@@ -58,13 +58,13 @@ public:
   {
     return num_dims_;
   }
-  
+
   ///
-  /// Get boolean telling code if SDBCs are utilized  
+  /// Get boolean telling code if SDBCs are utilized
   ///
   virtual bool
   useSDBCs() const {
-    return false; 
+    return false;
   }
     
   //! Get boolean telling code if composite tets are utilized  
@@ -189,7 +189,7 @@ protected:
   ///
   Teuchos::ArrayRCP<Teuchos::ArrayRCP<Teuchos::RCP<FC>>> new_state_;
 
-  template <typename EvalT> 
+  template <typename EvalT>
   void registerStateVariables(
     Teuchos::RCP<LCM::ConstitutiveModelInterface<EvalT, PHAL::AlbanyTraits>> cmiEv,
     PHX::FieldManager<PHAL::AlbanyTraits>& fm0,
@@ -331,32 +331,32 @@ constructEvaluators(PHX::FieldManager<PHAL::AlbanyTraits>& fm0,
     Teuchos::ArrayRCP<std::string> resid_names(1);
     dof_names[0] = "Displacement";
     resid_names[0] = dof_names[0] + " Residual";
-  
+
     fm0.template registerEvaluator<EvalT>
       (evalUtils.constructGatherSolutionEvaluator_noTransient(true, dof_names));
-  
+
     fm0.template registerEvaluator<EvalT>
       (evalUtils.constructGatherCoordinateVectorEvaluator());
-  
+
     fm0.template registerEvaluator<EvalT>
       (evalUtils.constructDOFVecInterpolationEvaluator(dof_names[0]));
-  
+
     fm0.template registerEvaluator<EvalT>
       (evalUtils.constructDOFVecGradInterpolationEvaluator(dof_names[0]));
-  
+
     fm0.template registerEvaluator<EvalT>
       (evalUtils.constructMapToPhysicalFrameEvaluator(cellType, cubature));
-  
+
     fm0.template registerEvaluator<EvalT>
       (evalUtils.constructComputeBasisFunctionsEvaluator(cellType, intrepidBasis, cubature));
-  
+
     fm0.template registerEvaluator<EvalT>
       (evalUtils.constructScatterResidualEvaluator(true, resid_names));
     offset += num_dims_;
   }
 
 
-  { // Electrical 
+  { // Electrical
     Teuchos::ArrayRCP<std::string> dof_names(1);
     Teuchos::ArrayRCP<std::string> resid_names(1);
     dof_names[0] = "Electric Potential";
@@ -387,7 +387,7 @@ constructEvaluators(PHX::FieldManager<PHAL::AlbanyTraits>& fm0,
 
 
 
-  { // Temperature 
+  { // Temperature
     Teuchos::RCP<Teuchos::ParameterList> p = Teuchos::rcp(new Teuchos::ParameterList);
 
     p->set<std::string>("Material Property Name", "Temperature");
@@ -481,10 +481,10 @@ constructEvaluators(PHX::FieldManager<PHAL::AlbanyTraits>& fm0,
         new Teuchos::ParameterList("Constitutive Model Interface"));
     std::string matName = material_db_->getElementBlockParam<std::string>( eb_name, "material");
     Teuchos::ParameterList& param_list = material_db_->getElementBlockSublist(eb_name, matName);
-  
+
     p->set<std::string>("Temperature Name", temperature);
     param_list.set<bool>("Have Temperature", true);
-  
+
     param_list.set<Teuchos::RCP<std::map<std::string, std::string>>>( "Name Map", fnm);
     p->set<Teuchos::ParameterList*>("Material Parameters", &param_list);
     p->set<bool>("Volume Average Pressure", volume_average_pressure);
@@ -521,7 +521,7 @@ constructEvaluators(PHX::FieldManager<PHAL::AlbanyTraits>& fm0,
   }
 
   { // Mechanical Residual
-    Teuchos::RCP<Teuchos::ParameterList> 
+    Teuchos::RCP<Teuchos::ParameterList>
       p = Teuchos::rcp(new Teuchos::ParameterList("Displacement Residual"));
     //Input
     p->set<std::string>("Stress Name", stress);
@@ -537,7 +537,7 @@ constructEvaluators(PHX::FieldManager<PHAL::AlbanyTraits>& fm0,
   }
 
   { // Electrical Residual
-    Teuchos::RCP<Teuchos::ParameterList> 
+    Teuchos::RCP<Teuchos::ParameterList>
       p = Teuchos::rcp(new Teuchos::ParameterList("Electric Potential Residual"));
     //Input
     p->set<std::string>("Electric Displacement Name", edisp);
@@ -592,7 +592,7 @@ void Albany::ElectroMechanicsProblem::registerStateVariables(
 
     //
     // QUAD POINT SCALARS
-    if( (cmiEv->getLayout() == dl_->qp_scalar) && 
+    if( (cmiEv->getLayout() == dl_->qp_scalar) &&
         (cmiEv->getOutputFlag() == true) ){
 
       // save cell average for output
@@ -614,10 +614,10 @@ void Albany::ElectroMechanicsProblem::registerStateVariables(
       fm0.template registerEvaluator<EvalT>(ev);
 
     } else
-    
+
     //
     // QUAD POINT VECTORS
-    if( (cmiEv->getLayout() == dl_->qp_vector) && 
+    if( (cmiEv->getLayout() == dl_->qp_vector) &&
         (cmiEv->getOutputFlag() == true) ){
 
       std::string cn[3] = {"x","y","z"};
@@ -651,7 +651,7 @@ void Albany::ElectroMechanicsProblem::registerStateVariables(
 
     //
     // QUAD POINT TENSORS
-    if( (cmiEv->getLayout() == dl_->qp_tensor) && 
+    if( (cmiEv->getLayout() == dl_->qp_tensor) &&
         (cmiEv->getOutputFlag() == true) ){
 
       std::string cn[3] = {"x","y","z"};
@@ -688,7 +688,7 @@ void Albany::ElectroMechanicsProblem::registerStateVariables(
 
     //
     // QUAD POINT THIRD RANK TENSORS
-    if( (cmiEv->getLayout() == dl_->qp_tensor3) && 
+    if( (cmiEv->getLayout() == dl_->qp_tensor3) &&
         (cmiEv->getOutputFlag() == true) ){
 
       std::string cn[3] = {"x","y","z"};
