@@ -17,6 +17,9 @@
 //IKT: uncomment to turn on debug output
 //#define DEBUG_OUTPUT
 
+//Global variable to control printing of warning to screen 
+static int cc = 0; 
+
 namespace LCM {
 
 //------------------------------------------------------------------------------
@@ -32,15 +35,9 @@ MechanicsResidual<EvalT, Traits>::MechanicsResidual(
       residual_(p.get<std::string>("Residual Name"), dl->node_vector),
       ct_mass_(p.get<std::string>("Composite Tet Mass Name"), dl->node_vector),  
       have_body_force_(p.isType<bool>("Has Body Force")),
-      //IKT, FIXME: uncomment next line, remove line after that  
-      //use_composite_tet_(p.isType<bool>("Use Composite Tet")),
-      use_composite_tet_(false),
       density_(p.get<RealType>("Density", 1.0))
 {
   Teuchos::RCP<Teuchos::FancyOStream> out = Teuchos::VerboseObjectBase::getDefaultOStream();
-#ifdef DEBUG_OUTPUT
-  *out << "IKT use_composite_tet_ = " << use_composite_tet_ << "\n";  
-#endif 
   this->addDependentField(stress_);
   this->addDependentField(w_grad_bf_);
   this->addDependentField(w_bf_);
@@ -53,6 +50,21 @@ MechanicsResidual<EvalT, Traits>::MechanicsResidual(
   else
     enable_dynamics_ = true;
 
+  use_composite_tet_ = p.get<bool>("Use Composite Tet"); 
+  use_ct_exact_mass_ = p.get<bool>("Use Composite Tet Exact Mass");
+#ifdef DEBUG_OUTPUT
+  *out << "IKT use_composite_tet_, use_ct_exact_mass_ = " << use_composite_tet_ << ", " 
+       << use_ct_exact_mass_ << "\n";  
+#endif
+  if ((use_composite_tet_ == false) && (use_ct_exact_mass_ == true) && (cc == 0)) {
+    *out << "\n ****************************************************************\n" 
+         << "WARNING: you are not using a composite tet element yet you have \n" 
+         << "selected 'Use Composite Tet Exact Mass' to true.  This option only \n"
+         << "works correctly for Composite Tet and Hex8 elements, so if you are \n"
+         << "not using a Hex8 element, you will get the wrong result!\n"
+         << "\n ****************************************************************\n\n";  
+  }
+  cc++; 
   if (enable_dynamics_) {
     acceleration_ = decltype(acceleration_)(
         p.get<std::string>("Acceleration Name"), dl->qp_vector);
@@ -246,11 +258,7 @@ MechanicsResidual<EvalT, Traits>::evaluateFields(
   //If transient problem and not using composite tet element, enable acceleration terms.
   //This is similar to what is done in Peridigm when mass is passed from peridigm rather than 
   //computed in Albany; see, e.g., albanyIsCreatingMassMatrix-based logic in PeridigmForce_Def.hpp 
-  //IKT, FIXME: uncomment following when ready
-  //IKT, FIXME? if this ends up being the ultimate design for the composite tet mass, can get rid of 
-  //use_composite_tet and is_interleaved in workset, and relevant commits.  Just pass logic re: composite
-  //tet from problem. 
-    if (use_composite_tet_ == false) { //not using a composite tet element 
+    if (use_ct_exact_mass_ == false) { //not using exact mass (for composite tet and hex8 elts)
       for (int cell = 0; cell < workset.numCells; ++cell) {
         for (int node = 0; node < num_nodes_; ++node) {
           for (int pt = 0; pt < num_pts_; ++pt) {
@@ -262,7 +270,7 @@ MechanicsResidual<EvalT, Traits>::evaluateFields(
         }
       }
     }
-    else { //using composite tet element: add contribution from composite tet mass evaluator
+    else { //using exact mass (for composite tet and hex8 elts): add contribution from composite tet mass evaluator
       for (int cell = 0; cell < workset.numCells; ++cell) {
         for (int node = 0; node < num_nodes_; ++node) {
           for (int dim = 0; dim < num_dims_; ++dim) {

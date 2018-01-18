@@ -38,10 +38,12 @@ CompositeTetMassResidualBase(const Teuchos::ParameterList& p,
     density_ = p.get<RealType>("Density"); 
 
   resid_using_cub_ = p.get<bool>("Residual Computed Using Cubature"); 
-#ifdef DEBUG_OUTPUT 
-  *out_ << "IKT resid_using_cub = " << resid_using_cub_ << "\n"; 
-#endif
+  use_composite_tet_ = p.get<bool>("Use Composite Tet"); 
 
+#ifdef DEBUG_OUTPUT 
+  *out_ << "IKT resid_using_cub, use_composite_tet = " << resid_using_cub_ << ", " 
+        << use_composite_tet << "\n"; 
+#endif
   this->addDependentField(w_bf_);
   this->addEvaluatedField(ct_mass_);
 
@@ -92,7 +94,6 @@ postRegistrationSetup(typename Traits::SetupData d,
   }
 }
 
-#ifdef USE_HEX8
 template<typename EvalT, typename Traits>
 std::vector<RealType> CompositeTetMassResidualBase<EvalT, Traits>::
 hexLocalMassRow(const int row) const 
@@ -149,7 +150,6 @@ hexLocalMassRow(const int row) const
   }
   return mass_row; 
 }
-#endif
  
 template<typename EvalT, typename Traits>
 std::vector<RealType> CompositeTetMassResidualBase<EvalT, Traits>::
@@ -261,11 +261,13 @@ computeResidualValue(typename Traits::EvalData workset) const
     //Approach 2: uses mass matrix to compute residual contribution (r = rho*M*a)
     for (int cell = 0; cell < workset.numCells; ++cell) {
       for (int node = 0; node < this->num_nodes_; ++node) { //loop over rows
-#ifdef USE_HEX8 
-        const std::vector<RealType> mass_row = this->hexLocalMassRow(node);
-#else
-        const std::vector<RealType> mass_row = this->compositeTetLocalMassRow(node);
-#endif
+        std::vector<RealType> mass_row; 
+        if (use_composite_tet_ == true) { //composite tet
+          mass_row = this->compositeTetLocalMassRow(node);
+        }
+        else { //hex8
+          mass_row = this->hexLocalMassRow(node);
+        }
         const RealType elt_vol_scale_node = this->computeElementVolScaling(cell, node); 
         for (int dim = 0; dim < this->num_dims_; ++dim) {
           ScalarT val = 0.0; 
@@ -339,11 +341,13 @@ evaluateFields(typename Traits::EvalData workset)
 #endif 
   for (int cell = 0; cell < workset.numCells; ++cell) {
     for (int node = 0; node < this->num_nodes_; ++node) { //loop over Jacobian rows
-#ifdef USE_HEX8 
-      const std::vector<RealType> mass_row = this->hexLocalMassRow(node);
-#else
-      const std::vector<RealType> mass_row = this->compositeTetLocalMassRow(node);
-#endif
+      std::vector<RealType> mass_row;
+      if (this->use_composite_tet_ == true) { //composite tet
+        mass_row = this->compositeTetLocalMassRow(node);
+      }
+      else { //hex8
+        mass_row = this->hexLocalMassRow(node);
+      }
       const RealType elt_vol_scale_node = this->computeElementVolScaling(cell, node); 
       for (int dim = 0; dim < this->num_dims_; ++dim) {
         typename PHAL::Ref<ScalarT>::type valref = (this->ct_mass_)(cell,node,dim); //get Jacobian row 

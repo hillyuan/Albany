@@ -14,9 +14,6 @@
 #include <Sacado_ParameterAccessor.hpp>
 #include "Albany_Layouts.hpp"
 
-//IKT: uncomment the following if testing hex8 exact mass for 
-//debugging purposes.  Otherwise, we use composite tet exact mass. 
-//#define USE_HEX8 
 
 namespace LCM {
 /** \brief This evaluator computes the residual and Jacobian contributions
@@ -48,10 +45,8 @@ protected:
 
   /// Local function: return row of exact composite tet local mass (unscaled)
   std::vector<RealType> compositeTetLocalMassRow(const int row) const;
-#ifdef USE_HEX8
   /// Local function: return row of exact 8-node hexahedron local mass (unscaled)
   std::vector<RealType> hexLocalMassRow(const int row) const;
-#endif
   /// Local function: returns \int w_bf d\Omega for a given cell as a given node, 
   //  needed to compute the volume of each element to multiply local mass by.
   RealType computeElementVolScaling(const int cell, const int node) const; 
@@ -84,6 +79,8 @@ protected:
   /// Boolean telling code whether to use cubature to compute residual
   /// (if false, mass matrix will be used) 
   bool resid_using_cub_; 
+  /// Flag to mark if using composite tet
+  bool use_composite_tet_; 
 };
 
 template<typename EvalT, typename Traits> class CompositeTetMassResidual;

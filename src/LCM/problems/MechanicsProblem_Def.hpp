@@ -1820,11 +1820,13 @@ MechanicsProblem::constructEvaluators(
             "Density", 
             material_db_->getElementBlockParam<RealType>(eb_name, "Density"));
       }
+
       bool resid_using_cub = material_db_->getElementBlockParam<bool>(
            eb_name, "Residual Computed Using Cubature", false);
-
       p->set<bool>("Residual Computed Using Cubature", resid_using_cub);
-  
+      bool composite_tet = material_db_->getElementBlockParam<bool>(
+           eb_name, "Use Composite Tet", false);
+      p->set<bool>("Use Composite Tet", composite_tet);
 
       p->set<Teuchos::RCP<ParamLib>>("Parameter Library", paramLib);
       // Output
@@ -1846,7 +1848,12 @@ MechanicsProblem::constructEvaluators(
       p->set<std::string>("Acceleration Name", "Acceleration");
       p->set<std::string>("Body Force Name", "Body Force");
       p->set<std::string>("Composite Tet Mass Name", "Composite Tet Mass Residual");
-      p->set<bool>("Use Composite Tet", composite);
+      bool composite_tet = material_db_->getElementBlockParam<bool>(
+           eb_name, "Use Composite Tet", false);
+      p->set<bool>("Use Composite Tet", composite_tet);
+      bool use_ct_exact_mass = material_db_->getElementBlockParam<bool>(
+           eb_name, "Use Composite Tet Exact Mass", false);
+      p->set<bool>("Use Composite Tet Exact Mass", use_ct_exact_mass);
       if (Teuchos::nonnull(rc_mgr_)) {
         p->set<std::string>("DefGrad Name", defgrad);
         rc_mgr_->registerField(
