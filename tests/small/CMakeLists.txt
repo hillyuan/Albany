@@ -16,6 +16,7 @@ IF(ALBANY_HAVE_STK) # STK is needed for all these
   add_subdirectory(ContinuationHeat1D)
   add_subdirectory(Heat1DPeriodic)
   add_subdirectory(Heat2DTriangles)
+  add_subdirectory(ThermoConductTriangles)
   add_subdirectory(Heat1DWithSource)
   add_subdirectory(MPNIQuad2D)
   add_subdirectory(TransientHeat1D)
