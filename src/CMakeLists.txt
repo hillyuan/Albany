@@ -131,6 +131,7 @@ SET(SOURCES ${SOURCES}
   problems/Albany_BCUtils.cpp
   problems/Albany_EvaluatorUtils.cpp
   problems/Albany_HeatProblem.cpp
+  problems/Albany_ThermoConductProblem.cpp
   problems/Albany_Layouts.cpp
   problems/Albany_ProblemFactory.cpp
   problems/Albany_ProblemUtils.cpp
@@ -156,6 +157,7 @@ SET(HEADERS ${HEADERS}
   problems/Albany_EvaluatorUtils.hpp
   problems/Albany_EvaluatorUtils_Def.hpp
   problems/Albany_HeatProblem.hpp
+  problems/Albany_ThermoConductProblem.hpp
   problems/Albany_Layouts.hpp
   problems/Albany_ProblemFactory.hpp
   problems/Albany_ProblemUtils.hpp
@@ -302,6 +304,7 @@ SET(SOURCES ${SOURCES}
   evaluators/interpolation/PHAL_QuadPointsToCellInterpolation.cpp
   evaluators/interpolation/PHAL_SideQuadPointsToSideInterpolation.cpp
   evaluators/pde/PHAL_HeatEqResid.cpp
+  evaluators/pde/PHAL_ThermoConductResid.cpp
   evaluators/pde/PHAL_NSMaterialProperty.cpp
   evaluators/pde/PHAL_SideLaplacianResidual.cpp
   evaluators/pde/PHAL_ThermalConductivity.cpp
@@ -441,6 +444,8 @@ SET(HEADERS ${HEADERS}
   evaluators/interpolation/PHAL_SideQuadPointsToSideInterpolation_Def.hpp
   evaluators/pde/PHAL_HeatEqResid.hpp
   evaluators/pde/PHAL_HeatEqResid_Def.hpp
+  evaluators/pde/PHAL_ThermoConductResid.hpp
+  evaluators/pde/PHAL_ThermoConductResid_Def.hpp
   evaluators/pde/PHAL_NSMaterialProperty.hpp
   evaluators/pde/PHAL_NSMaterialProperty_Def.hpp
   evaluators/pde/PHAL_SideLaplacianResidual.hpp

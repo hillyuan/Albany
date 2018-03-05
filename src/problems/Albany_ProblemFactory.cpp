@@ -9,6 +9,7 @@
 
 // Always enable HeatProblem and SideLaplacianProblem
 #include "Albany_HeatProblem.hpp"
+#include "Albany_ThermoConductProblem.hpp"
 #include "Albany_SideLaplacianProblem.hpp"
 
 #ifdef ALBANY_DEMO_PDES
@@ -126,6 +127,12 @@ Albany::ProblemFactory::create()
   }
   else if (method == "Heat 3D") {
     strategy = rcp(new Albany::HeatProblem(problemParams, paramLib, 3, commT));
+  }
+  else if (method == "ThermoConduct 2D") {
+    strategy = rcp(new Albany::ThermoConductProblem(problemParams, paramLib, 2, commT));
+  }
+  else if (method == "ThermoConduct 3D") {
+    strategy = rcp(new Albany::ThermoConductProblem(problemParams, paramLib, 3, commT));
   }
   else if (method == "Side Laplacian 3D") {
     strategy = rcp(new Albany::SideLaplacian(problemParams, paramLib, 1));
