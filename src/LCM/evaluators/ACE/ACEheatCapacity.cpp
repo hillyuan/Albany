@@ -6,8 +6,7 @@
 
 #include "PHAL_AlbanyTraits.hpp"
 
-#include "ProjectIPtoNodalField.hpp"
-#include "ProjectIPtoNodalField_Def.hpp"
+#include "ACEheatCapacity.hpp"
+#include "ACEheatCapacity_Def.hpp"
 
-PHAL_INSTANTIATE_TEMPLATE_CLASS(LCM::ProjectIPtoNodalField)
-PHAL_INSTANTIATE_TEMPLATE_CLASS(LCM::ProjectIPtoNodalFieldBase)
+PHAL_INSTANTIATE_TEMPLATE_CLASS(LCM::ACEheatCapacity)
