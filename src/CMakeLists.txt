@@ -670,6 +670,7 @@ include_directories (${Trilinos_INCLUDE_DIRS}
                      ./disc
                      ./LCM/
                      ./LCM/evaluators
+                     ./LCM/evaluators/ACE
                      ./LCM/evaluators/bc
                      ./LCM/evaluators/contact
                      ./LCM/evaluators/HMC
@@ -686,6 +687,8 @@ include_directories (${Trilinos_INCLUDE_DIRS}
                      ./LCM/evaluators/transport
                      ./LCM/evaluators/HMC
                      ./LCM/models
+                     ./LCM/parallel_evaluators
+                     ./LCM/parallel_models
                      ./LCM/solvers
                      ./LCM/utils
                      ./LCM/utils/topology

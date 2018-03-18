@@ -12,12 +12,13 @@
 namespace LCM {
 
 template <typename EvalT, typename Traits>
-ACEdensity<EvalT, Traits>::ACEdensity(Teuchos::ParameterList& p)
-    : density_(
+ACEthermalConductivity<EvalT, Traits>::
+ACEthermalConductivity(Teuchos::ParameterList& p)
+    : thermal_conductivity_(
           p.get<std::string>("QP Variable Name"),
           p.get<Teuchos::RCP<PHX::DataLayout>>("QP Scalar Data Layout"))
 {
-  Teuchos::ParameterList* density_list =
+  Teuchos::ParameterList* thermal_conductivity_list =
     p.get<Teuchos::ParameterList*>("Parameter List");
 
   Teuchos::RCP<PHX::DataLayout> vector_dl =
@@ -30,37 +31,38 @@ ACEdensity<EvalT, Traits>::ACEdensity(Teuchos::ParameterList& p)
   Teuchos::RCP<ParamLib> paramLib =
     p.get< Teuchos::RCP<ParamLib>>("Parameter Library", Teuchos::null);
 
-  // Read density values
-  rho_ice_ = density_list->get<double>("Ice Value");
-  rho_wat_ = density_list->get<double>("Water Value");
-  rho_sed_ = density_list->get<double>("Sediment Value");
+  // Read thermal conductivity values
+  k_ice_ = thermal_conductivity_list->get<double>("Ice Value");
+  k_wat_ = thermal_conductivity_list->get<double>("Water Value");
+  k_sed_ = thermal_conductivity_list->get<double>("Sediment Value");
 
-  // Add density as a Sacado-ized parameter
-  this->registerSacadoParameter("ACE Density", paramLib);
+  // Add thermal conductivity as a Sacado-ized parameter
+  this->registerSacadoParameter("ACE Thermal Conductivity", paramLib);
 
-  this->addEvaluatedField(density_);
-  this->setName("ACE Density" + PHX::typeAsString<EvalT>());
+  this->addEvaluatedField(thermal_conductivity_);
+  this->setName("ACE Thermal Conductivity" + PHX::typeAsString<EvalT>());
 }
 
 //
 template <typename EvalT, typename Traits>
 void
-ACEdensity<EvalT, Traits>::postRegistrationSetup(
+ACEthermalConductivity<EvalT, Traits>::postRegistrationSetup(
     typename Traits::SetupData d,
     PHX::FieldManager<Traits>& fm)
 {
-  this->utils.setFieldData(density_, fm);
+  this->utils.setFieldData(thermal_conductivity_, fm);
   return;
 }
 
 //
-// This function needs to know the water, ice, and sediment intrinsic densities
-// plus the current QP ice/water saturations and QP porosity which come from 
-// the material model.
-// The density calculation is based on a volume average mixture model.
+// This function needs to know the water, ice, and sediment intrinsic thermal
+// conductivities plus the current QP ice/water saturations and QP porosity 
+// which come from the material model.
+// The thermal K calculation is based on a volume average mixture model.
 template <typename EvalT, typename Traits>
 void
-ACEdensity<EvalT, Traits>::evaluateFields(typename Traits::EvalData workset)
+ACEthermalConductivity<EvalT, Traits>::evaluateFields(
+    typename Traits::EvalData workset)
 {
   int num_cells = workset.numCells;
   double por = 0.50;  // this needs to come from QP value, here temporary
@@ -71,32 +73,34 @@ ACEdensity<EvalT, Traits>::evaluateFields(typename Traits::EvalData workset)
 
   for (int cell = 0; cell < num_cells; ++cell) {
     for (int qp = 0; qp < num_qps_; ++qp) {
-      density_(cell, qp) = por*(rho_ice_*f + rho_wat_*w) + 
-                           ((1.0-por)*rho_sed_);
+      thermal_conductivity_(cell, qp) = 
+          pow(k_ice_,(f*por)) * pow(k_wat_,(w*por)) *
+          pow(k_sed_,(1.0-por));
+      }
     }
-  }
 
   return;
 }
 
 //
 template <typename EvalT, typename Traits>
-typename ACEdensity<EvalT, Traits>::ScalarT&
-ACEdensity<EvalT, Traits>::getValue(const std::string& n)
+typename ACEthermalConductivity<EvalT, Traits>::ScalarT&
+ACEthermalConductivity<EvalT, Traits>::getValue(const std::string& n)
 {
-  if (n == "ACE Ice Density") {
-    return rho_ice_;
+  if (n == "ACE Ice Thermal Conductivity") {
+    return k_ice_;
   }
-  if (n == "ACE Water Density") {
-    return rho_wat_;
+  if (n == "ACE Water Thermal Conductivity") {
+    return k_wat_;
   }
-  if (n == "ACE Sediment Density") {
-    return rho_sed_;
+  if (n == "ACE Sediment Thermal Conductivity") {
+    return k_sed_;
   }
 
-  ALBANY_ASSERT(false, "Invalid request for value of ACE Component Density");
+  ALBANY_ASSERT(false, 
+             "Invalid request for value of ACE Component Thermal Conductivity");
 
-  return rho_wat_; // does it matter what we return here?
+  return k_wat_; // does it matter what we return here?
 }
 
 }  // namespace LCM

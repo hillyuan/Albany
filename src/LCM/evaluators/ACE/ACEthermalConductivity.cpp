@@ -6,7 +6,7 @@
 
 #include "PHAL_AlbanyTraits.hpp"
 
-#include "SetField.hpp"
-#include "SetField_Def.hpp"
+#include "ACEthermalConductivity.hpp"
+#include "ACEthermalConductivity_Def.hpp"
 
-PHAL_INSTANTIATE_TEMPLATE_CLASS(LCM::SetField)
+PHAL_INSTANTIATE_TEMPLATE_CLASS(LCM::ACEthermalConductivity)

@@ -96,10 +96,16 @@ ENDIF(ALBANY_HAVE_STK)
 # LCM ACE evaluators
 set(ace-sources
   "${LCM_DIR}/evaluators/ACE/ACEdensity.cpp"
+  "${LCM_DIR}/evaluators/ACE/ACEheatCapacity.cpp"
+  "${LCM_DIR}/evaluators/ACE/ACEthermalConductivity.cpp"
 )
 set(ace-headers
   "${LCM_DIR}/evaluators/ACE/ACEdensity.hpp"
   "${LCM_DIR}/evaluators/ACE/ACEdensity_Def.hpp"
+  "${LCM_DIR}/evaluators/ACE/ACEheatCapacity.hpp"
+  "${LCM_DIR}/evaluators/ACE/ACEheatCapacity_Def.hpp"
+  "${LCM_DIR}/evaluators/ACE/ACEthermalConductivity.hpp"
+  "${LCM_DIR}/evaluators/ACE/ACEthermalConductivity_Def.hpp"
 )
 
 # LCM special boundary conditions
@@ -694,6 +700,7 @@ set(INCLUDE_DIRS
   ${Albany_SOURCE_DIR}/src/adapt
   ${LCM_DIR}/problems
   ${LCM_DIR}/evaluators
+  ${LCM_DIR}/evaluators/ACE
   ${LCM_DIR}/evaluators/bc
   ${LCM_DIR}/evaluators/contact
   ${LCM_DIR}/evaluators/HMC

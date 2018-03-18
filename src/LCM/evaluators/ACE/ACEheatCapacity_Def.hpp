@@ -12,12 +12,12 @@
 namespace LCM {
 
 template <typename EvalT, typename Traits>
-ACEdensity<EvalT, Traits>::ACEdensity(Teuchos::ParameterList& p)
-    : density_(
+ACEheatCapacity<EvalT, Traits>::ACEheatCapacity(Teuchos::ParameterList& p)
+    : heat_capacity_(
           p.get<std::string>("QP Variable Name"),
           p.get<Teuchos::RCP<PHX::DataLayout>>("QP Scalar Data Layout"))
 {
-  Teuchos::ParameterList* density_list =
+  Teuchos::ParameterList* heat_capacity_list =
     p.get<Teuchos::ParameterList*>("Parameter List");
 
   Teuchos::RCP<PHX::DataLayout> vector_dl =
@@ -30,46 +30,49 @@ ACEdensity<EvalT, Traits>::ACEdensity(Teuchos::ParameterList& p)
   Teuchos::RCP<ParamLib> paramLib =
     p.get< Teuchos::RCP<ParamLib>>("Parameter Library", Teuchos::null);
 
-  std::string type = density_list->get("Density Type", "Constant");
-  if (type == "Constant") {
-    is_constant_ = true;
-    constant_value_ = density_list->get<double>("Value");
+  // Read density values
+  cp_ice_ = heat_capacity_list->get<double>("Ice Value");
+  cp_wat_ = heat_capacity_list->get<double>("Water Value");
+  cp_sed_ = heat_capacity_list->get<double>("Sediment Value");
 
-    // Add density as a Sacado-ized parameter
-    this->registerSacadoParameter("Density", paramLib);
-  }
-  else {
-    TEUCHOS_TEST_FOR_EXCEPTION(true, Teuchos::Exceptions::InvalidParameter,
-             "Invalid density type " << type);
-  }
+  // Add heat capacity as a Sacado-ized parameter
+  this->registerSacadoParameter("ACE Heat Capacity", paramLib);
 
-  this->addEvaluatedField(density_);
-  this->setName("Density" + PHX::typeAsString<EvalT>());
+  this->addEvaluatedField(heat_capacity_);
+  this->setName("ACE Heat Capacity" + PHX::typeAsString<EvalT>());
 }
 
 //
 template <typename EvalT, typename Traits>
 void
-ACEdensity<EvalT, Traits>::postRegistrationSetup(
+ACEheatCapacity<EvalT, Traits>::postRegistrationSetup(
     typename Traits::SetupData d,
     PHX::FieldManager<Traits>& fm)
 {
-  this->utils.setFieldData(density_, fm);
+  this->utils.setFieldData(heat_capacity_, fm);
   return;
 }
 
 //
+// This function needs to know the water, ice, and sediment intrinsic heat
+// capacities plus the current QP ice/water saturations and QP porosity which  
+// come from the material model.
+// The heat capacity calculation is based on a volume average mixture model.
 template <typename EvalT, typename Traits>
 void
-ACEdensity<EvalT, Traits>::evaluateFields(typename Traits::EvalData workset)
+ACEheatCapacity<EvalT, Traits>::evaluateFields(typename Traits::EvalData workset)
 {
   int num_cells = workset.numCells;
+  double por = 0.50;  // this needs to come from QP value, here temporary
+  double w = 0.50;  // this is an evolving QP parameter, here temporary
+  double f = 0.50;  // this is an evolving QP parameter, here temporary
+  // notes: if the material model is ACEice, por = 1.0, f = 1.0, w = 0.0
+  //        if the material model is ACEpermafrost, then por, f, and w evolve
 
-  if (is_constant_ == true) {
-    for (int cell = 0; cell < num_cells; ++cell) {
-      for (int qp = 0; qp < num_qps_; ++qp) {
-        density_(cell, qp) = constant_value_;
-      }
+  for (int cell = 0; cell < num_cells; ++cell) {
+    for (int qp = 0; qp < num_qps_; ++qp) {
+      heat_capacity_(cell, qp) = por*(cp_ice_*f + cp_wat_*w) + 
+                                 ((1.0-por)*cp_sed_);
     }
   }
 
@@ -78,16 +81,23 @@ ACEdensity<EvalT, Traits>::evaluateFields(typename Traits::EvalData workset)
 
 //
 template <typename EvalT, typename Traits>
-typename ACEdensity<EvalT, Traits>::ScalarT&
-ACEdensity<EvalT, Traits>::getValue(const std::string& n)
+typename ACEheatCapacity<EvalT, Traits>::ScalarT&
+ACEheatCapacity<EvalT, Traits>::getValue(const std::string& n)
 {
-  if (n == "Density") {
-    return constant_value_;
+  if (n == "ACE Ice Heat Capacity") {
+    return cp_ice_;
+  }
+  if (n == "ACE Water Heat Capacity") {
+    return cp_wat_;
+  }
+  if (n == "ACE Sediment Heat Capacity") {
+    return cp_sed_;
   }
 
-  ALBANY_ASSERT(false, "Invalid request for value of Density");
+  ALBANY_ASSERT(false, 
+                "Invalid request for value of ACE Component Heat Capacity");
 
-  return constant_value_;
+  return cp_wat_; // does it matter what we return here?
 }
 
 }  // namespace LCM

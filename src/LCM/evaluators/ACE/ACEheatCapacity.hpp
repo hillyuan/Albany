@@ -4,8 +4,8 @@
 //    in the file "license.txt" in the top-level Albany directory  //
 //*****************************************************************//
 
-#if !defined(ACEdensity_hpp)
-#define ACEdensity_hpp
+#if !defined(ACEheatCapacity_hpp)
+#define ACEheatCapacity_hpp
 
 #include "Phalanx_Evaluator_Derived.hpp"
 #include "Phalanx_Evaluator_WithBaseImpl.hpp"
@@ -18,25 +18,27 @@
 
 namespace LCM {
 ///
-/// Evaluated mass density at integration points
+/// Evaluates heat capacity at integration points
 ///
 template <typename EvalT, typename Traits>
-class ACEdensity : public PHX::EvaluatorWithBaseImpl<Traits>,
-                   public PHX::EvaluatorDerived<EvalT, Traits>,
-                   public Sacado::ParameterAccessor<EvalT, SPL_Traits> {
+class ACEheatCapacity : public PHX::EvaluatorWithBaseImpl<Traits>,
+                        public PHX::EvaluatorDerived<EvalT, Traits>,
+                        public Sacado::ParameterAccessor<EvalT, SPL_Traits> {
  public:
   using ScalarT = typename EvalT::ScalarT;
 
-  ACEdensity(Teuchos::ParameterList& p);
+  ACEheatCapacity(Teuchos::ParameterList& p);
 
   void
   postRegistrationSetup(
       typename Traits::SetupData d,
       PHX::FieldManager<Traits>& vm);
 
+  /// Calculates mixture model heat capacity
   void
-  evaluateFields(typename Traits::EvalData d);
+  evaluateFields(typename Traits::EvalData workset);
 
+  /// Gets the intrinsic heat capacity values
   ScalarT&
   getValue(const std::string& n);
 
@@ -44,15 +46,16 @@ class ACEdensity : public PHX::EvaluatorWithBaseImpl<Traits>,
   int num_qps_{0};
   int num_dims_{0};
 
-  PHX::MDField<ScalarT, Cell, QuadPoint> density_;
+  // contains the mixture model heat capacity value
+  PHX::MDField<ScalarT, Cell, QuadPoint> heat_capacity_;
 
-  /// Constant value
-  ScalarT constant_value_{0.0};
-
-  /// Whether it is constant
-  bool is_constant_{false};
+  // contains the intrinsic heat capacity values for ice, water, sediment
+  // these values are constant
+  ScalarT cp_ice_{0.0};
+  ScalarT cp_wat_{0.0};
+  ScalarT cp_sed_{0.0};
 
 };
 }  // namespace LCM
 
-#endif  // ACE_density_hpp
+#endif  // ACEheatCapacity_hpp

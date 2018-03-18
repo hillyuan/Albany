@@ -4,7 +4,6 @@
 //    in the file "license.txt" in the top-level Albany directory  //
 //*****************************************************************//
 #include "Albany_Utils.hpp"
-#include "ACE/ACEdensity.hpp"
 #include "ACEice.hpp"
 #include "MiniNonlinearSolver.h"
 
@@ -31,12 +30,12 @@ ACEiceMiniKernel<EvalT, Traits>::ACEiceMiniKernel(
   setDependentField(F_string, dl->qp_tensor);
   setDependentField(J_string, dl->qp_scalar);
 
-  setDependentField("Density", dl->qp_scalar);
+  setDependentField("ACE Density", dl->qp_scalar);
   setDependentField("Elastic Modulus", dl->qp_scalar);
   setDependentField("Hardening Modulus", dl->qp_scalar);
-  setDependentField("Heat Capacity", dl->qp_scalar);
+  setDependentField("ACE Heat Capacity", dl->qp_scalar);
   setDependentField("Poissons Ratio", dl->qp_scalar);
-  setDependentField("Thermal Conductivity", dl->qp_scalar);
+  setDependentField("ACE Thermal Conductivity", dl->qp_scalar);
   setDependentField("Yield Strength", dl->qp_scalar);
 
   setDependentField("Delta Time", dl->workset_scalar);
@@ -120,12 +119,12 @@ ACEiceMiniKernel<EvalT, Traits>::init(
   J                = *dep_fields[J_string];
 
   delta_time           = *dep_fields["Delta Time"];
-  density              = *dep_fields["Density"];
+  density              = *dep_fields["ACE Density"];
   elastic_modulus      = *dep_fields["Elastic Modulus"];
   hardening_modulus    = *dep_fields["Hardening Modulus"];
-  heat_capacity        = *dep_fields["Heat Capacity"];
+  heat_capacity        = *dep_fields["ACE Heat Capacity"];
   poissons_ratio       = *dep_fields["Poissons Ratio"];
-  thermal_conductivity = *dep_fields["Thermal Conductivity"];
+  thermal_conductivity = *dep_fields["ACE Thermal Conductivity"];
   yield_strength       = *dep_fields["Yield Strength"];
 
   // extract evaluated MDFields
