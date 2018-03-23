@@ -146,12 +146,86 @@ RCP<Teuchos::ParameterEntry> getEntryCopy(
   return Teuchos::null;
 }
 
+Teuchos::Array<int> getMyBlockLIDs(
+    std::string nodeSetLabel,
+    const Albany::AbstractDiscretization &disc)
+{
+  Teuchos::Array<int> result;
+
+  const Albany::NodeSetList &nodeSets = disc.getNodeSets();
+  const Albany::NodeSetList::const_iterator it = nodeSets.find(nodeSetLabel);
+  TEUCHOS_TEST_FOR_EXCEPT(it == nodeSets.end());
+  {
+    typedef Albany::NodeSetList::mapped_type NodeSetEntryList;
+    const NodeSetEntryList &nodeEntries = it->second;
+
+    for (NodeSetEntryList::const_iterator jt = nodeEntries.begin(); jt != nodeEntries.end(); ++jt) {
+      typedef NodeSetEntryList::value_type NodeEntryList;
+      const NodeEntryList &entries = *jt;
+      result.push_back(entries[0]/entries.size()); // outputting the node number here rather than the DOF
+    }
+  }
+
+  return result;
+}
+
+std::vector<std::string> split(const char *str, char c = ' ')
+{
+  std::vector<std::string> result;
+  do
+  {
+    const char *begin = str;
+    while(*str != c && *str)
+        str++;
+    result.push_back(std::string(begin, str));
+  } while (0 != *str++);
+  return result;
+}
+
+void extract_DBC_data(Teuchos::RCP<Teuchos::ParameterList> myDBCParams, Teuchos::RCP<Albany::AbstractDiscretization> mydisc, Teuchos::Array<stk::mesh::EntityId>& sampleNodeIds, int cMin)
+{
+	Teuchos::Array<std::string> runningListOfDBCNodeSets;
+	for (auto it=myDBCParams->begin(); it!=myDBCParams->end(); it++)
+	{
+		std::string this_name = myDBCParams->name(it);
+		std::vector<std::string> token_name = split(this_name.c_str());
+
+		int offset;
+		bool time_varying = token_name[0].compare("Time") == 0 ? offset = 2 : offset = 0;
+		std::string name = token_name[offset+3];
+
+		if(std::find(runningListOfDBCNodeSets.begin(), runningListOfDBCNodeSets.end(), name) == runningListOfDBCNodeSets.end())
+		{
+			Teuchos::Array<int> mySelectedLIDs = getMyBlockLIDs(name, *mydisc);
+			std::cout << name << " has " << mySelectedLIDs.size() << " nodes: " << mySelectedLIDs << std::endl;
+
+			int count=0;
+			for (auto it=mySelectedLIDs.begin(); (it!=mySelectedLIDs.end())&&(count<cMin); it++, count++)
+			{
+			  if (std::find(sampleNodeIds.begin(), sampleNodeIds.end(), *it) != sampleNodeIds.end())
+			  {
+				std::cout << "\tnode " << *it << " is already in the sampling list" << std::endl;
+			  }
+			  else
+			  {
+				sampleNodeIds.push_back(*it);
+				std::cout << "\tadding node " << *it << " to the sampling list" << std::endl;
+			  }
+			}
+			runningListOfDBCNodeSets.push_back(name);
+		}
+	}
+}
+
+
 int main(int argc, char *argv[])
 {
   // Communicators
   Teuchos::GlobalMPISession mpiSession(&argc, &argv);
   const Albany_MPI_Comm nativeComm = Albany_MPI_COMM_WORLD;
   const RCP<const Teuchos::Comm<int> > teuchosComm = Albany::createTeuchosCommFromMpiComm(nativeComm);
+
+  Kokkos::initialize(argc, argv);
 
   // Standard output
   const RCP<Teuchos::FancyOStream> out = Teuchos::VerboseObjectBase::getDefaultOStream();
@@ -160,6 +234,7 @@ int main(int argc, char *argv[])
   const std::string firstArg = (argc > 1) ? argv[1] : "";
   if (firstArg.empty() || firstArg == "--help") {
     *out << "AlbanyRBGen input-file-path\n";
+    Kokkos::finalize_all();
     return 0;
   }
   const std::string inputFileName = argv[1];
@@ -183,6 +258,9 @@ int main(int argc, char *argv[])
 
   const RCP<Teuchos::ParameterList> problemParams = Teuchos::sublist(topLevelParams, "Problem", sublistMustExist);
   const RCP<const Teuchos::ParameterList> problemParamsCopy = Teuchos::rcp(new Teuchos::ParameterList(*problemParams));
+
+  const RCP<Teuchos::ParameterList> DBCParams =
+		  Teuchos::sublist(problemParams, "Dirichlet BCs", /*sublistMustExist =*/ true);
 
   // Create original (full) discretization
   const RCP<Albany::AbstractDiscretization> disc = Albany::discretizationNew(topLevelParams, teuchosComm);
@@ -224,7 +302,10 @@ int main(int argc, char *argv[])
     sampleNodeIds.push_back(*it + 1);
   }
 
-  *out << "Sample = " << sampleNodeIds << "\n";
+  *out << "(pre DBC) Sample = " << sampleNodeIds << "\n";
+  int cMin = samplingParams->get("Minimum Nodes Per DBC", 1); // minimum number of nodes from each nodeset that we want to sample
+  extract_DBC_data(DBCParams, disc, sampleNodeIds, cMin);
+  *out << "(post DBC) Sample = " << sampleNodeIds << "\n";
 
   // Choose first sample node as sensor
   const Teuchos::ArrayView<const stk::mesh::EntityId> sensorNodeIds = sampleNodeIds.view(0, 1);
@@ -269,4 +350,5 @@ int main(int argc, char *argv[])
       transferSolutionHistory(*stkDisc, *reducedDisc);
     }
   }
+  Kokkos::finalize_all();
 }

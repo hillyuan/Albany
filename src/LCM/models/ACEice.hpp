@@ -46,7 +46,6 @@ struct ACEiceMiniKernel : public ParallelKernel<EvalT, Traits>
   // optional temperature support
   using BaseKernel::expansion_coeff_;
   using BaseKernel::have_temperature_;
-  using BaseKernel::latent_heat_;
   using BaseKernel::ref_temperature_;
   using BaseKernel::temperature_;
 
@@ -71,19 +70,25 @@ struct ACEiceMiniKernel : public ParallelKernel<EvalT, Traits>
   ConstScalarField yield_strength;
 
 
-  // extract evaluated MDFields
+  // Extract evaluated MDFields
   ScalarField stress;
   ScalarField Fp;
   ScalarField eqps;
   ScalarField yieldSurf;
   ScalarField source;
+  ScalarField i_sat;
+  ScalarField w_sat;
 
+  // Workspace arrays
   Albany::MDArray Fpold;
   Albany::MDArray eqpsold;
-
+  
   // Saturation hardening constraints
   RealType sat_mod;
   RealType sat_exp;
+  
+  // Latent heat phase change
+  RealType latent_heat;
 
   void
   init(
