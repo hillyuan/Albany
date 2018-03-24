@@ -1,0 +1,23 @@
+%YAML 1.1
+---
+ANONYMOUS:
+  ElementBlocks: 
+    block_1: 
+      material: m1
+    block_2: 
+      material: m2
+  Materials: 
+    m1: 
+      Category: none
+      Thermal Conductivity: 
+        Name: Constant
+        Value: 5.00000000000000000e+01
+    m2: 
+      Category: none
+      Thermal Conductivity: 
+        Name: Constant
+        Value: 5.00000000000000000e+01
+      Source Functions: 
+        Constant: 
+          Value: 2.50000000000000e+03
+...

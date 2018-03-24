@@ -1,0 +1,15 @@
+mesh
+   brick
+    numz 1
+      zblock 1 1.0 interval 2
+    numx 2
+      xblock 1 10. interval 10
+      xblock 2 1. interval 1
+    numy 1
+      yblock 1 1. interval 2
+   end
+   set assign
+      block nodeset, ilo, 1, 1
+   end
+end
+

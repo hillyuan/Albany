@@ -1,0 +1,21 @@
+%YAML 1.1
+---
+ANONYMOUS:
+  Problem: 
+    Name: Heat 3D
+    Solution Method: Steady
+    MaterialDB Filename: material2block.yaml
+    Dirichlet BCs: 
+      DBC on NS nodelist_1 for DOF T: 0.00000000000000000e+00
+    Thermal Conductivity: 
+      Thermal Conductivity Type: Block Dependent
+  Discretization: 
+    Method: Pamgen
+    Exodus Output File Name: block.exo
+    Pamgen Input File Name: beam2b.pg
+    Separate Evaluators by Element Block: true
+    Workset Size: 1
+    Cubature Degree: 2
+  Regression Results: 
+    Relative Tolerance: 1.00000000000000002e-03
+...
