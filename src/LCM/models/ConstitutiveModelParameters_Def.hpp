@@ -169,10 +169,64 @@ ConstitutiveModelParameters<EvalT, Traits>::ConstitutiveModelParameters(
   // ACE thermal conductivity
   std::string ace_k_str("ACE Thermal Conductivity");
   if (mat_params->isSublist(ace_k_str)) {
-    thermal_cond_ = decltype(thermal_cond_)(ace_k_str, dl_->qp_scalar);
-    field_map_.insert(std::make_pair(ace_k_str, thermal_cond_));
+    thermal_conductivity_ = 
+        decltype(thermal_conductivity_)(ace_k_str, dl_->qp_scalar);
+    field_map_.insert(std::make_pair(ace_k_str, thermal_conductivity_));
     parseParameters(ace_k_str, p, paramLib);
   }
+  // ACE thermal inertia
+  std::string chi_str("ACE Thermal Inertia");
+  if (mat_params->isSublist(chi_str)) {
+    thermal_inertia_ =
+        decltype(thermal_inertia_)(chi_str, dl_->qp_scalar);
+    field_map_.insert(std::make_pair(chi_str, thermal_inertia_));
+    parseParameters(chi_str, p, paramLib);
+  }
+  // ACE ice saturation
+  std::string isat_str("ACE Ice Saturation");
+  if (mat_params->isSublist(isat_str)) {
+    ice_saturation_ = decltype(ice_saturation_)(isat_str, dl_->qp_scalar);
+    field_map_.insert(std::make_pair(isat_str, ice_saturation_));
+    parseParameters(isat_str, p, paramLib);
+  }
+  // ACE water saturation
+  std::string wsat_str("ACE Water Saturation");
+  if (mat_params->isSublist(wsat_str)) {
+    water_saturation_ = decltype(water_saturation_)(wsat_str, dl_->qp_scalar);
+    field_map_.insert(std::make_pair(wsat_str, water_saturation_));
+    parseParameters(wsat_str, p, paramLib);
+  }
+  // ACE porosity
+  std::string por_str("ACE Porosity");
+  if (mat_params->isSublist(por_str)) {
+    porosity_ = decltype(porosity_)(por_str, dl_->qp_scalar);
+    field_map_.insert(std::make_pair(por_str, porosity_));
+    parseParameters(por_str, p, paramLib);
+  }   
+  // ACE melting temperature
+  std::string tmelt_str("ACE Melting Temperature");
+  if (mat_params->isSublist(tmelt_str)) {
+    melting_temperature_ = 
+        decltype(melting_temperature_)(tmelt_str, dl_->qp_scalar);
+    field_map_.insert(std::make_pair(tmelt_str, melting_temperature_));
+    parseParameters(tmelt_str, p, paramLib);
+  }
+  // ACE temperature change
+  std::string delT_str("ACE Temperature Change");
+  if (mat_params->isSublist(delT_str)) {
+    delta_temperature_ =
+        decltype(delta_temperature_)(delT_str, dl_->qp_scalar);
+    field_map_.insert(std::make_pair(delT_str, delta_temperature_));
+    parseParameters(delT_str, p, paramLib);
+  }
+  // ACE freezing curve slope
+  std::string dfdT_str("ACE Freezing Curve Slope");
+  if (mat_params->isSublist(dfdT_str)) {
+    dfdT_ = decltype(dfdT_)(dfdT_str, dl_->qp_scalar);
+    field_map_.insert(std::make_pair(dfdT_str, dfdT_));
+    parseParameters(dfdT_str, p, paramLib);
+  }
+
 
   // register evaluated fields
   for (auto& pair : field_map_) {

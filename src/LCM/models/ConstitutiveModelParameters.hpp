@@ -108,8 +108,17 @@ class ConstitutiveModelParameters
   PHX::MDField<ScalarT, Cell, QuadPoint> diff_coeff_;
   ///  Thermal parameters
   PHX::MDField<ScalarT, Cell, QuadPoint> thermal_cond_;
+  ///  ACE parameters
+  PHX::MDField<ScalarT, Cell, QuadPoint> delta_temperature_;
   PHX::MDField<ScalarT, Cell, QuadPoint> density_;
+  PHX::MDField<ScalarT, Cell, QuadPoint> dfdT_;
   PHX::MDField<ScalarT, Cell, QuadPoint> heat_capacity_;
+  PHX::MDField<ScalarT, Cell, QuadPoint> ice_saturation_;
+  PHX::MDField<ScalarT, Cell, QuadPoint> melting_temperature_;
+  PHX::MDField<ScalarT, Cell, QuadPoint> porosity_;
+  PHX::MDField<ScalarT, Cell, QuadPoint> thermal_conductivity_;
+  PHX::MDField<ScalarT, Cell, QuadPoint> thermal_inertia_;
+  PHX::MDField<ScalarT, Cell, QuadPoint> water_saturation_;
 
   ///
   /// map of strings to specify parameter names to MDFields

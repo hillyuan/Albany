@@ -12,12 +12,19 @@
 namespace LCM {
 
 template <typename EvalT, typename Traits>
-ACEdensity<EvalT, Traits>::ACEdensity(Teuchos::ParameterList& p)
-    : density_(
-          p.get<std::string>("QP Variable Name"),
-          p.get<Teuchos::RCP<PHX::DataLayout>>("QP Scalar Data Layout"))
+ACEdensity<EvalT, Traits>::ACEdensity(
+    Teuchos::ParameterList&              p,
+    const Teuchos::RCP<Albany::Layouts>& dl)
+    : density_(  // evaluated
+          p.get<std::string>("ACE Density"), dl->qp_scalar),
+      porosity_(  // dependent
+          p.get<std::string>("ACE Porosity"), dl->qp_scalar),
+      ice_saturation_(  // dependent
+          p.get<std::string>("ACE Ice Saturation"), dl->qp_scalar),
+      water_saturation_(  // dependent
+          p.get<std::string>("ACE Water Saturation"), dl->qp_scalar)
 {
-  Teuchos::ParameterList* density_list =
+  Teuchos::ParameterList* density_p_list =
     p.get<Teuchos::ParameterList*>("Parameter List");
 
   Teuchos::RCP<PHX::DataLayout> vector_dl =
@@ -31,14 +38,21 @@ ACEdensity<EvalT, Traits>::ACEdensity(Teuchos::ParameterList& p)
     p.get< Teuchos::RCP<ParamLib>>("Parameter Library", Teuchos::null);
 
   // Read density values
-  rho_ice_ = density_list->get<double>("Ice Value");
-  rho_wat_ = density_list->get<double>("Water Value");
-  rho_sed_ = density_list->get<double>("Sediment Value");
+  rho_ice_ = density_p_list->get<double>("Ice Value");
+  rho_wat_ = density_p_list->get<double>("Water Value");
+  rho_sed_ = density_p_list->get<double>("Sediment Value");
 
   // Add density as a Sacado-ized parameter
   this->registerSacadoParameter("ACE Density", paramLib);
 
+  // List evaluated fields
   this->addEvaluatedField(density_);
+  
+  // List dependent fields
+  this->addDependentField(porosity_);
+  this->addDependentField(ice_saturation_);
+  this->addDependentField(water_saturation_);
+  
   this->setName("ACE Density" + PHX::typeAsString<EvalT>());
 }
 
@@ -49,30 +63,27 @@ ACEdensity<EvalT, Traits>::postRegistrationSetup(
     typename Traits::SetupData d,
     PHX::FieldManager<Traits>& fm)
 {
+  // List all fields
   this->utils.setFieldData(density_, fm);
+  this->utils.setFieldData(porosity_, fm);
+  this->utils.setFieldData(ice_saturation_, fm);
+  this->utils.setFieldData(water_saturation_, fm);
   return;
 }
 
-//
-// This function needs to know the water, ice, and sediment intrinsic densities
-// plus the current QP ice/water saturations and QP porosity which come from 
-// the material model.
 // The density calculation is based on a volume average mixture model.
 template <typename EvalT, typename Traits>
 void
 ACEdensity<EvalT, Traits>::evaluateFields(typename Traits::EvalData workset)
 {
   int num_cells = workset.numCells;
-  double por = 0.50;  // this needs to come from QP value, here temporary
-  double w = 0.50;  // this is an evolving QP parameter, here temporary
-  double f = 0.50;  // this is an evolving QP parameter, here temporary
-  // notes: if the material model is ACEice, por = 1.0, f = 1.0, w = 0.0
-  //        if the material model is ACEpermafrost, then por, f, and w evolve
 
   for (int cell = 0; cell < num_cells; ++cell) {
     for (int qp = 0; qp < num_qps_; ++qp) {
-      density_(cell, qp) = por*(rho_ice_*f + rho_wat_*w) + 
-                           ((1.0-por)*rho_sed_);
+      density_(cell, qp) = 
+        porosity_(cell, qp)*(rho_ice_*ice_saturation_(cell, qp) + 
+        rho_wat_*water_saturation_(cell, qp)) + 
+        ((1.0-porosity_(cell, qp))*rho_sed_);
     }
   }
 

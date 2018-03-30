@@ -15,8 +15,7 @@ ACEiceMiniKernel<EvalT, Traits>::ACEiceMiniKernel(
     Teuchos::ParameterList*              p,
     Teuchos::RCP<Albany::Layouts> const& dl)
     : BaseKernel(model), sat_mod(p->get<RealType>("Saturation Modulus", 0.0)),
-      sat_exp(p->get<RealType>("Saturation Exponent", 0.0)),
-      latent_heat(p->get<RealType>("Latent Heat",0.0))
+      sat_exp(p->get<RealType>("Saturation Exponent", 0.0))
 {
   // retrieve appropriate field name strings
   std::string const cauchy_string       = field_name_map_["Cauchy_Stress"];
@@ -26,19 +25,20 @@ ACEiceMiniKernel<EvalT, Traits>::ACEiceMiniKernel(
   std::string const source_string       = field_name_map_["Mechanical_Source"];
   std::string const F_string            = field_name_map_["F"];
   std::string const J_string            = field_name_map_["J"];
-  std::string const isat_string         = field_name_map_["Ice_Saturation"];
-  std::string const wsat_string         = field_name_map_["Water_Saturation"];
 
   // define the dependent fields
   setDependentField(F_string, dl->qp_tensor);
   setDependentField(J_string, dl->qp_scalar);
 
   setDependentField("ACE Density", dl->qp_scalar);
+  setDependentField("ACE Heat Capacity", dl->qp_scalar);
+  setDependentField("ACE Ice Saturation", dl->qp_scalar);
+  setDependentField("ACE Thermal Conductivity", dl->qp_scalar);
+  setDependentField("ACE Porosity", dl->qp_scalar);
+  setDependentField("ACE Water Saturation", dl->qp_scalar);
   setDependentField("Elastic Modulus", dl->qp_scalar);
   setDependentField("Hardening Modulus", dl->qp_scalar);
-  setDependentField("ACE Heat Capacity", dl->qp_scalar);
   setDependentField("Poissons Ratio", dl->qp_scalar);
-  setDependentField("ACE Thermal Conductivity", dl->qp_scalar);
   setDependentField("Yield Strength", dl->qp_scalar);
 
   setDependentField("Delta Time", dl->workset_scalar);
@@ -48,8 +48,6 @@ ACEiceMiniKernel<EvalT, Traits>::ACEiceMiniKernel(
   setEvaluatedField(Fp_string, dl->qp_tensor);
   setEvaluatedField(eqps_string, dl->qp_scalar);
   setEvaluatedField(yieldSurface_string, dl->qp_scalar);
-  setEvaluatedField(isat_string, dl->qp_scalar);
-  setEvaluatedField(wsat_string, dl->qp_scalar);
   if (have_temperature_ == true) {
     setEvaluatedField(source_string, dl->qp_scalar);
   }
@@ -102,32 +100,15 @@ ACEiceMiniKernel<EvalT, Traits>::ACEiceMiniKernel(
         false,
         p->get<bool>("Output Mechanical Source", false));
   }
-  
-  // ice saturation
-  addStateVariable(
-      isat_string,
-      dl->qp_scalar,
-      "scalar",
-      0.0,
-      false,
-      p->get<bool>("Output Ice Saturation", false));
-  
-  // water saturation
-  addStateVariable(
-      wsat_string,
-      dl->qp_scalar,
-      "scalar",
-      0.0,
-      false,
-      p->get<bool>("Output Water Saturation", false));
+
 }
 
 template<typename EvalT, typename Traits>
 void
 ACEiceMiniKernel<EvalT, Traits>::init(
     Workset&                 workset,
-    FieldMap<const ScalarT>& dep_fields,
-    FieldMap<ScalarT>&       eval_fields)
+    FieldMap<const ScalarT>& fields_const,
+    FieldMap<ScalarT>&       fields)
 {
   std::string cauchy_string       = field_name_map_["Cauchy_Stress"];
   std::string Fp_string           = field_name_map_["Fp"];
@@ -136,32 +117,32 @@ ACEiceMiniKernel<EvalT, Traits>::init(
   std::string source_string       = field_name_map_["Mechanical_Source"];
   std::string F_string            = field_name_map_["F"];
   std::string J_string            = field_name_map_["J"];
-  std::string isat_string         = field_name_map_["Ice_Saturation"];
-  std::string wsat_string         = field_name_map_["Water_Saturation"];
 
   // extract dependent MDFields
-  def_grad         = *dep_fields[F_string];
-  J                = *dep_fields[J_string];
+  def_grad = *fields_const[F_string];
+  J        = *fields_const[J_string]; 
+  
+  delta_time        = *fields_const["Delta Time"];
+  elastic_modulus   = *fields_const["Elastic Modulus"];
+  hardening_modulus = *fields_const["Hardening Modulus"];
+  poissons_ratio    = *fields_const["Poissons Ratio"];
+  yield_strength    = *fields_const["Yield Strength"];
 
-  delta_time           = *dep_fields["Delta Time"];
-  density              = *dep_fields["ACE Density"];
-  elastic_modulus      = *dep_fields["Elastic Modulus"];
-  hardening_modulus    = *dep_fields["Hardening Modulus"];
-  heat_capacity        = *dep_fields["ACE Heat Capacity"];
-  poissons_ratio       = *dep_fields["Poissons Ratio"];
-  thermal_conductivity = *dep_fields["ACE Thermal Conductivity"];
-  yield_strength       = *dep_fields["Yield Strength"];
+  density              = *fields_const["ACE Density"];
+  heat_capacity        = *fields_const["ACE Heat Capacity"];
+  ice_saturation       = *fields_const["ACE Ice Saturation"];
+  porosity             = *fields_const["ACE Porosity"];
+  thermal_conductivity = *fields_const["ACE Thermal Conductivity"];
+  water_saturation     = *fields_const["ACE Water Saturation"];
 
   // extract evaluated MDFields
-  stress    = *eval_fields[cauchy_string];
-  Fp        = *eval_fields[Fp_string];
-  eqps      = *eval_fields[eqps_string];
-  yieldSurf = *eval_fields[yieldSurface_string];
-  i_sat     = *eval_fields[isat_string];
-  w_sat     = *eval_fields[wsat_string];
+  stress    = *fields[cauchy_string];
+  Fp        = *fields[Fp_string];
+  eqps      = *fields[eqps_string];
+  yieldSurf = *fields[yieldSurface_string];
 
   if (have_temperature_ == true) {
-    source = *eval_fields[source_string];
+    source = *fields[source_string];
   }
 
   // get State Variables
@@ -279,6 +260,9 @@ ACEiceMiniKernel<EvalT, Traits>::operator()(int cell, int pt) const
   ScalarT const rho   = density(cell, pt);
   ScalarT const Cp    = heat_capacity(cell, pt);
   ScalarT const KK    = thermal_conductivity(cell, pt);
+  ScalarT const isat  = ice_saturation(cell, pt);
+  ScalarT const wsat  = water_saturation(cell, pt);
+  ScalarT const por   = porosity(cell, pt);
 
   // fill local tensors
   F.fill(def_grad, cell, pt, 0, 0);
@@ -395,11 +379,5 @@ ACEiceMiniKernel<EvalT, Traits>::operator()(int cell, int pt) const
     }
   }
   
-  // update ice/water saturations
-  // note these quantities will need to be updated according to the 
-  // change in temperature and the freezing curve df/dT
-  // for right now they are held constant
-  i_sat(cell, pt) = 1.0;
-  w_sat(cell, pt) = 0.0;
 }
 }  // namespace LCM
