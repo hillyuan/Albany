@@ -491,6 +491,10 @@ set (COMMON_CONFIGURE_OPTIONS
   "-DTrilinos_ENABLE_Amesos:BOOL=ON"
   "-DTrilinos_ENABLE_Anasazi:BOOL=ON"
   "-DAnasazi_ENABLE_RBGen:BOOL=ON"
+  "-DTrilinos_ENABLE_TpetraTSQR:BOOL=ON"
+  "-DTpetraCore_ENABLE_TSQR:BOOL=ON"
+  "-DAnazazi_ENABLE_TSQR:BOOL=ON"
+  "-DBelos_ENABLE_TSQR:BOOL=ON"
   "-DTrilinos_ENABLE_Belos:BOOL=ON"
   "-DTrilinos_ENABLE_ML:BOOL=ON"
   "-DTrilinos_ENABLE_Phalanx:BOOL=ON"
@@ -508,7 +512,6 @@ set (COMMON_CONFIGURE_OPTIONS
   "-DTrilinos_ENABLE_Piro:BOOL=ON"
   "-DTrilinos_ENABLE_Teko:BOOL=ON"
   "-DTrilinos_ENABLE_Zoltan:BOOL=ON"
-  "-DTrilinos_ENABLE_Moertel:BOOL=ON"
   #
   "-DTrilinos_ENABLE_FEI:BOOL=OFF"
   #
@@ -597,9 +600,9 @@ if (BUILD_TRILINOS)
     "-DZlib_INCLUDE_DIRS:PATH=${PREFIX_DIR}/include"
     "-DZlib_LIBRARY_DIRS:PATH=${PREFIX_DIR}/lib"
 #
-    "-DTPL_ENABLE_yaml-cpp:BOOL=ON"
-    "-Dyaml-cpp_INCLUDE_DIRS:PATH=${PREFIX_DIR}/include"
-    "-Dyaml-cpp_LIBRARY_DIRS:PATH=${PREFIX_DIR}/lib"
+#    "-DTPL_ENABLE_yaml-cpp:BOOL=ON"
+#    "-Dyaml-cpp_INCLUDE_DIRS:PATH=${PREFIX_DIR}/include"
+#    "-Dyaml-cpp_LIBRARY_DIRS:PATH=${PREFIX_DIR}/lib"
 #
     "-DTPL_ENABLE_ParMETIS:BOOL=ON"
     "-DParMETIS_INCLUDE_DIRS:PATH=${PREFIX_DIR}/include"
@@ -742,9 +745,9 @@ if (BUILD_TRILINOSCLANG)
     "-DZlib_INCLUDE_DIRS:PATH=${PREFIX_DIR}/clang/include"
     "-DZlib_LIBRARY_DIRS:PATH=${PREFIX_DIR}/clang/lib"
   #
-    "-DTPL_ENABLE_yaml-cpp:BOOL=ON"
-    "-Dyaml-cpp_INCLUDE_DIRS:PATH=${PREFIX_DIR}/clang/include"
-    "-Dyaml-cpp_LIBRARY_DIRS:PATH=${PREFIX_DIR}/clang/lib"
+#    "-DTPL_ENABLE_yaml-cpp:BOOL=ON"
+#    "-Dyaml-cpp_INCLUDE_DIRS:PATH=${PREFIX_DIR}/clang/include"
+#    "-Dyaml-cpp_LIBRARY_DIRS:PATH=${PREFIX_DIR}/clang/lib"
   #
     "-DTPL_ENABLE_ParMETIS:BOOL=ON"
     "-DParMETIS_INCLUDE_DIRS:PATH=${PREFIX_DIR}/clang/include"
@@ -838,9 +841,9 @@ if (BUILD_TRILINOSDBG)
     "-DZlib_INCLUDE_DIRS:PATH=${PREFIX_DIR}/include"
     "-DZlib_LIBRARY_DIRS:PATH=${PREFIX_DIR}/lib"
 #
-    "-DTPL_ENABLE_yaml-cpp:BOOL=ON"
-    "-Dyaml-cpp_INCLUDE_DIRS:PATH=${PREFIX_DIR}/include"
-    "-Dyaml-cpp_LIBRARY_DIRS:PATH=${PREFIX_DIR}/lib"
+#    "-DTPL_ENABLE_yaml-cpp:BOOL=ON"
+#    "-Dyaml-cpp_INCLUDE_DIRS:PATH=${PREFIX_DIR}/include"
+#    "-Dyaml-cpp_LIBRARY_DIRS:PATH=${PREFIX_DIR}/lib"
 #
     "-DTPL_ENABLE_ParMETIS:BOOL=ON"
     "-DParMETIS_INCLUDE_DIRS:PATH=${PREFIX_DIR}/include"
