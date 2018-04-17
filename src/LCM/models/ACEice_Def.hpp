@@ -35,15 +35,15 @@ ACEiceMiniKernel<EvalT, Traits>::ACEiceMiniKernel(
   setDependentField("Yield Strength", dl->qp_scalar);
 
   // Computed incrementally
-  setDependentField("ACE Ice Saturation", dl->qp_scalar);
+  setEvaluatedField("ACE Ice Saturation", dl->qp_scalar);
 
   // For output/convenience
-  setDependentField("ACE Density", dl->qp_scalar);
-  setDependentField("ACE Heat Capacity", dl->qp_scalar);
-  setDependentField("ACE Thermal Conductivity", dl->qp_scalar);
-  setDependentField("ACE Porosity", dl->qp_scalar);
-  setDependentField("ACE Water Saturation", dl->qp_scalar);
-  setDependentField("Delta Time", dl->workset_scalar);
+  setEvaluatedField("ACE Density", dl->qp_scalar);
+  setEvaluatedField("ACE Heat Capacity", dl->qp_scalar);
+  setEvaluatedField("ACE Thermal Conductivity", dl->qp_scalar);
+  //setEvaluatedField("ACE Porosity", dl->qp_scalar);
+  setEvaluatedField("ACE Water Saturation", dl->qp_scalar);
+  setEvaluatedField("Delta Time", dl->workset_scalar);
 
   // define the evaluated fields
   setEvaluatedField(cauchy_string, dl->qp_tensor);
@@ -129,6 +129,7 @@ ACEiceMiniKernel<EvalT, Traits>::ACEiceMiniKernel(
       p->get<bool>("Output ACE Thermal Conductivity", false));
 
   // ACE Porosity
+  /*
   addStateVariable(
       "ACE Porosity",
       dl->qp_scalar,
@@ -136,6 +137,7 @@ ACEiceMiniKernel<EvalT, Traits>::ACEiceMiniKernel(
       0.0,
       false,
       p->get<bool>("Output ACE Porosity", false));
+  */
 
   // ACE Water Saturation
   addStateVariable(
@@ -176,11 +178,15 @@ ACEiceMiniKernel<EvalT, Traits>::init(
   def_grad = *input_fields[F_string];
   J        = *input_fields[J_string];
 
-  delta_time        = *input_fields["Delta Time"];
   elastic_modulus   = *input_fields["Elastic Modulus"];
   hardening_modulus = *input_fields["Hardening Modulus"];
   poissons_ratio    = *input_fields["Poissons Ratio"];
   yield_strength    = *input_fields["Yield Strength"];
+
+  ice_density       = *input_fields["ACE Density Ice Value"];
+  water_density     = *input_fields["ACE Density Water Value"];
+
+  delta_time        = *input_fields["Delta Time"];
 
   stress    = *output_fields[cauchy_string];
   Fp        = *output_fields[Fp_string];
@@ -190,7 +196,7 @@ ACEiceMiniKernel<EvalT, Traits>::init(
   ice_saturation       = *output_fields["ACE Ice Saturation"];
   density              = *output_fields["ACE Density"];
   heat_capacity        = *output_fields["ACE Heat Capacity"];
-  porosity             = *output_fields["ACE Porosity"];
+  //porosity             = *output_fields["ACE Porosity"];
   thermal_conductivity = *output_fields["ACE Thermal Conductivity"];
   water_saturation     = *output_fields["ACE Water Saturation"];
 
@@ -312,12 +318,6 @@ ACEiceMiniKernel<EvalT, Traits>::operator()(int cell, int pt) const
   ScalarT const Y     = yield_strength(cell, pt);
   ScalarT const J1    = J(cell, pt);
   ScalarT const Jm23  = 1.0 / std::cbrt(J1 * J1);
-  ScalarT const rho   = density(cell, pt);
-  ScalarT const Cp    = heat_capacity(cell, pt);
-  ScalarT const KK    = thermal_conductivity(cell, pt);
-  ScalarT const isat  = ice_saturation(cell, pt);
-  ScalarT const wsat  = water_saturation(cell, pt);
-  ScalarT const por   = porosity(cell, pt);
 
   // fill local tensors
   F.fill(def_grad, cell, pt, 0, 0);
@@ -337,6 +337,12 @@ ACEiceMiniKernel<EvalT, Traits>::operator()(int cell, int pt) const
       Fpn(i, j) = ScalarT(Fpold(cell, pt, i, j));
     }
   }
+
+  // Deal with non-mechanical values
+  std::cout << "Ice density   (cell, pt):" << cell << "," << pt << "," << ice_density(cell, pt);
+  std::cout << "Water density (cell, pt):" << cell << "," << pt << "," << water_density(cell, pt);
+
+  water_saturation(cell, pt) = 1.0 - ice_saturation(cell, pt);
 
   // compute trial state
   Tensor const  Fpinv = minitensor::inverse(Fpn);
