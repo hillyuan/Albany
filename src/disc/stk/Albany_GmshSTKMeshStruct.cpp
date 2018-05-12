@@ -121,7 +121,7 @@ Albany::GmshSTKMeshStruct::GmshSTKMeshStruct (const Teuchos::RCP<Teuchos::Parame
 
   // Counting boundaries
   std::set<int> bdTags;
-  for (int i(0); i<NumSides; ++i)
+  for (int i=0; i<NumSides; ++i)
     bdTags.insert(sides[NumSideNodes][i]);
 
   // Broadcasting the tags

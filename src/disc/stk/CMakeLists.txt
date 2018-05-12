@@ -11,6 +11,7 @@ SET(SOURCES
   Albany_GenericSTKFieldContainer.cpp
   Albany_GenericSTKMeshStruct.cpp
   Albany_GmshSTKMeshStruct.cpp
+  Albany_FstrSTKMeshStruct.cpp
   Albany_IossSTKMeshStruct.cpp
   Albany_MultiSTKFieldContainer.cpp
   Albany_OrdinarySTKFieldContainer.cpp
@@ -28,6 +29,7 @@ SET(HEADERS
   Albany_AsciiSTKMesh2D.hpp
   Albany_GenericSTKMeshStruct.hpp
   Albany_GmshSTKMeshStruct.hpp
+  Albany_FstrSTKMeshStruct.hpp
   Albany_GenericSTKFieldContainer.hpp
   Albany_GenericSTKFieldContainer_Def.hpp
   Albany_IossSTKMeshStruct.hpp
