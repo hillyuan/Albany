@@ -133,6 +133,7 @@ SET(SOURCES ${SOURCES}
   problems/Albany_HeatProblem.cpp
   problems/Albany_ThermoConductProblem.cpp
   problems/Albany_Layouts.cpp
+  problems/Albany_PopulateMesh.cpp
   problems/Albany_ProblemFactory.cpp
   problems/Albany_ProblemUtils.cpp
   problems/Albany_ResponseUtilities.cpp
@@ -160,6 +161,7 @@ SET(HEADERS ${HEADERS}
   problems/Albany_HeatProblem.hpp
   problems/Albany_ThermoConductProblem.hpp
   problems/Albany_Layouts.hpp
+  problems/Albany_PopulateMesh.hpp
   problems/Albany_ProblemFactory.hpp
   problems/Albany_ProblemUtils.hpp
   problems/Albany_ResponseUtilities.hpp
@@ -339,6 +341,7 @@ SET(SOURCES ${SOURCES}
   evaluators/utility/PHAL_ComputeBasisFunctionsSide.cpp
   evaluators/utility/PHAL_Constant.cpp
   evaluators/utility/PHAL_ConvertFieldType.cpp
+  evaluators/utility/PHAL_DummyResidual.cpp
   evaluators/utility/PHAL_FieldFrobeniusNorm.cpp
   evaluators/utility/PHAL_LangevinNoiseTerm.cpp
   evaluators/utility/PHAL_MapToPhysicalFrame.cpp
@@ -506,6 +509,8 @@ SET(HEADERS ${HEADERS}
   evaluators/utility/PHAL_Constant_Def.hpp
   evaluators/utility/PHAL_ConvertFieldType.hpp
   evaluators/utility/PHAL_ConvertFieldType_Def.hpp
+  evaluators/utility/PHAL_DummyResidual.hpp
+  evaluators/utility/PHAL_DummyResidual_Def.hpp
   evaluators/utility/PHAL_FieldFrobeniusNorm.hpp
   evaluators/utility/PHAL_FieldFrobeniusNorm_Def.hpp
   evaluators/utility/PHAL_LangevinNoiseTerm.hpp

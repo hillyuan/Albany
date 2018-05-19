@@ -23,6 +23,8 @@ LoadStateFieldBase(const Teuchos::ParameterList& p)
   PHX::MDField<ScalarType> f(fieldName, p.get<Teuchos::RCP<PHX::DataLayout> >("State Field Layout") );
   data = f;
 
+  if (p.isType<bool>("Enable Memoizer")) memoizer.enable_memoizer(p.get<bool>("Enable Memoizer"));
+
   this->addEvaluatedField(data);
   this->setName("Load State Field"+PHX::typeAsString<EvalT>());
 }
@@ -39,6 +41,8 @@ void LoadStateFieldBase<EvalT, Traits, ScalarType>::postRegistrationSetup(typena
 template<typename EvalT, typename Traits, typename ScalarType>
 void LoadStateFieldBase<EvalT, Traits, ScalarType>::evaluateFields(typename Traits::EvalData workset)
 {
+  if (memoizer.have_stored_data(workset)) return;
+
   //cout << "LoadStateFieldBase importing state " << stateName << " to field "
   //     << fieldName << " with size " << data.size() << endl;
 
@@ -61,6 +65,8 @@ LoadStateField(const Teuchos::ParameterList& p)
   PHX::MDField<ParamScalarT> f(fieldName, p.get<Teuchos::RCP<PHX::DataLayout> >("State Field Layout") );
   data = f;
 
+  if (p.isType<bool>("Enable Memoizer")) memoizer.enable_memoizer(p.get<bool>("Enable Memoizer"));
+
   this->addEvaluatedField(data);
   this->setName("Load State Field"+PHX::typeAsString<EvalT>());
 }
@@ -77,6 +83,8 @@ void LoadStateField<EvalT, Traits>::postRegistrationSetup(typename Traits::Setup
 template<typename EvalT, typename Traits>
 void LoadStateField<EvalT, Traits>::evaluateFields(typename Traits::EvalData workset)
 {
+  if (memoizer.have_stored_data(workset)) return;
+
   //cout << "LoadStateField importing state " << stateName << " to field " 
   //     << fieldName << " with size " << data.size() << endl;
 
