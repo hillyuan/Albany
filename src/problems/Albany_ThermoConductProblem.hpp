@@ -22,8 +22,7 @@
 namespace Albany {
 
   /*!
-   * \brief Abstract interface for representing a 1-D finite element
-   * problem.
+   * \brief Abstract interface for representing a ThermoConduct finite element problem.
    */
   class ThermoConductProblem : public AbstractProblem {
   public:
@@ -119,7 +118,7 @@ namespace Albany {
 #include "PHAL_Absorption.hpp"
 #include "PHAL_Source.hpp"
 //#include "PHAL_Neumann.hpp"
-#include "PHAL_HeatEqResid.hpp"
+#include "PHAL_ThermoConductResid.hpp"
 
 
 template <typename EvalT>
@@ -370,7 +369,7 @@ Albany::ThermoConductProblem::constructEvaluators(
     p->set<string>("Residual Name", "Temperature Residual");
     p->set< RCP<DataLayout> >("Node Scalar Data Layout", dl->node_scalar);
 
-    ev = rcp(new PHAL::HeatEqResid<EvalT,AlbanyTraits>(*p));
+    ev = rcp(new PHAL::ThermoConductResid<EvalT,AlbanyTraits>(*p));
     fm0.template registerEvaluator<EvalT>(ev);
   }
 
