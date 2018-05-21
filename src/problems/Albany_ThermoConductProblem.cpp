@@ -22,8 +22,7 @@ ThermoConductProblem( const Teuchos::RCP<Teuchos::ParameterList>& params_,
   haveSource(false),
   haveAbsorption(false),
   numDim(numDim_),
-  commT(commT_),
-  use_sdbcs_(false)
+  commT(commT_)
 {
   this->setNumEquations(1);
 
@@ -122,7 +121,6 @@ Albany::ThermoConductProblem::constructDirichletEvaluators(const std::vector<std
    Albany::BCUtils<Albany::DirichletTraits> bcUtils;
    dfm = bcUtils.constructBCEvaluators(nodeSetIDs, bcNames,
                                           this->params, this->paramLib);
-   use_sdbcs_ = bcUtils.useSDBCs(); 
    offsets_ = bcUtils.getOffsets(); 
 }
 
