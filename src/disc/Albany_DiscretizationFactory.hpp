@@ -91,7 +91,7 @@ class DiscretizationFactory {
     void
     setDiscretizationParameters(Teuchos::RCP<Teuchos::ParameterList> disc_params);
     
-#ifdef ALBANY_AMP
+#if defined(ALBANY_AMP) || defined(ALBANY_WAFERLG)
         /* This function overwrite previous number of equations in mesh structure */
         void
         setNumberOfEquations(int neq);

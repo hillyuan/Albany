@@ -54,6 +54,21 @@ IF(ALBANY_AMP)
      )
 ENDIF()
 
+IF(ALBANY_WAFERLG)
+  SET(SOURCES
+      ${SOURCES}
+      Albany_SimMeshStruct.cpp
+      Albany_SimDiscretization.cpp
+      Albany_SimOutput.cpp
+     )
+  SET(HEADERS
+      ${HEADERS}
+      Albany_SimMeshStruct.hpp
+      Albany_SimDiscretization.hpp
+      Albany_SimOutput.hpp
+     )
+ENDIF()
+
 IF(ALBANY_HAVE_STK)
   SET(SOURCES ${SOURCES} Albany_PUMIExodus.cpp)
   SET(HEADERS ${HEADERS} Albany_PUMIExodus.hpp)

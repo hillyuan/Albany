@@ -16,17 +16,17 @@
 
 #include <sstream>
 
-#if defined(ALBANY_SCOREC) || defined(ALBANY_AMP)
+#if defined(ALBANY_SCOREC) || defined(ALBANY_AMP) || defined(ALBANY_WAFERLG)
 #include <PCU.h>
 #endif
-#if (defined(ALBANY_SCOREC) && defined(SCOREC_SIMMODEL)) || defined(ALBANY_AMP)
+#if (defined(ALBANY_SCOREC) && defined(SCOREC_SIMMODEL)) || defined(ALBANY_AMP) || defined(ALBANY_WAFERLG)
 #include <SimUtil.h>
 #include <gmi_sim.h>
 #endif
 #ifdef ALBANY_SCOREC
 #include <gmi_mesh.h>
 #endif
-#ifdef ALBANY_AMP
+#if defined(ALBANY_AMP) || defined(ALBANY_WAFERLG)
 #include <SimPartitionedMesh.h>
 #include <MeshSim.h>
 #include <SimDiscrete.h>
@@ -550,10 +550,10 @@ Albany::APFMeshStruct::getValidDiscretizationParameters() const
 void
 Albany::APFMeshStruct::initialize_libraries(int* pargc, char*** pargv)
 {
-#if defined(ALBANY_SCOREC) || defined(ALBANY_AMP)
+#if defined(ALBANY_SCOREC) || defined(ALBANY_AMP) || defined(ALBANY_WAFERLG)
   PCU_Comm_Init();
 #endif
-#if (defined(ALBANY_SCOREC) && defined(SCOREC_SIMMODEL)) || defined(ALBANY_AMP)
+#if (defined(ALBANY_SCOREC) && defined(SCOREC_SIMMODEL)) || defined(ALBANY_AMP) || defined(ALBANY_WAFERLG)
   Sim_readLicenseFile(0);
   gmi_sim_start();
   gmi_register_sim();
@@ -561,7 +561,7 @@ Albany::APFMeshStruct::initialize_libraries(int* pargc, char*** pargv)
 #ifdef ALBANY_SCOREC
   gmi_register_mesh();
 #endif
-#ifdef ALBANY_AMP
+#if defined(ALBANY_AMP) || defined(ALBANY_WAFERLG)
   SimPartitionedMesh_start(pargc, pargv);
   MS_init();
   SimDiscrete_start(0);
@@ -572,17 +572,17 @@ Albany::APFMeshStruct::initialize_libraries(int* pargc, char*** pargv)
 void
 Albany::APFMeshStruct::finalize_libraries()
 {
-#ifdef ALBANY_AMP
+#if defined(ALBANY_AMP) || defined(ALBANY_WAFERLG)
   SimField_stop();
   SimDiscrete_stop(0);
   MS_exit();
   SimPartitionedMesh_stop();
 #endif
-#if (defined(ALBANY_SCOREC) && defined(SCOREC_SIMMODEL)) || defined(ALBANY_AMP)
+#if (defined(ALBANY_SCOREC) && defined(SCOREC_SIMMODEL)) || defined(ALBANY_AMP) || defined(ALBANY_WAFERLG)
   gmi_sim_stop();
   Sim_unregisterAllKeys();
 #endif
-#if defined(ALBANY_SCOREC) || defined(ALBANY_AMP)
+#if defined(ALBANY_SCOREC) || defined(ALBANY_AMP) || defined(ALBANY_WAFERLG)
   PCU_Comm_Free();
 #endif
 }

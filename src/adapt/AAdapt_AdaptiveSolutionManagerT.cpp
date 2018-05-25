@@ -20,11 +20,11 @@
 #ifdef ALBANY_SCOREC
 #include "AAdapt_MeshAdapt.hpp"
 #endif
-#ifdef ALBANY_AMP
+#if defined(ALBANY_AMP) || defined(ALBANY_WAFERLG)
 #include "AAdapt_SimAdapt.hpp"
 #include "AAdapt_SimLayerAdapt.hpp"
 #endif
-#if (defined(ALBANY_SCOREC) || defined(ALBANY_AMP))
+#if (defined(ALBANY_SCOREC) || defined(ALBANY_AMP)) || defined(ALBANY_WAFERLG)
 #include "Albany_APFDiscretization.hpp"
 #endif
 #include "AAdapt_RC_Manager.hpp"
@@ -155,7 +155,7 @@ AAdapt::AdaptiveSolutionManagerT::AdaptiveSolutionManagerT(
 
     }
   }
-#if (defined(ALBANY_SCOREC) || defined(ALBANY_AMP))
+#if (defined(ALBANY_SCOREC) || defined(ALBANY_AMP)  || defined(ALBANY_WAFERLG))
   {
     const Teuchos::RCP< Albany::APFDiscretization > apf_disc =
       Teuchos::rcp_dynamic_cast< Albany::APFDiscretization >(disc_);
@@ -209,7 +209,7 @@ buildAdapter(const Teuchos::RCP<rc::Manager>& rc_mgr)
                              commT_));
   } else
 #endif
-#ifdef ALBANY_AMP
+#if defined(ALBANY_AMP) || defined(ALBANY_WAFERLG)
   if (method == "Sim") {
     bool add_layer = false;
     if (adaptParams_->isType<bool>("Add Layer"))

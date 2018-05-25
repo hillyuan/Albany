@@ -183,6 +183,12 @@ SET(HEADERS ${HEADERS} AAdapt_SimAdapt.hpp AAdapt_SimLayerAdapt.hpp)
 include_directories(${ALBANY_PUMI_INCLUDE_DIRS})
 ENDIF()
 
+IF(ALBANY_WAFERLG)
+SET(SOURCES ${SOURCES} AAdapt_SimAdapt.cpp AAdapt_SimLayerAdapt.cpp)
+SET(HEADERS ${HEADERS} AAdapt_SimAdapt.hpp AAdapt_SimLayerAdapt.hpp)
+include_directories(${ALBANY_PUMI_INCLUDE_DIRS})
+ENDIF()
+
 include_directories(${Trilinos_INCLUDE_DIRS}  ${Trilinos_TPL_INCLUDE_DIRS}
                     ${Albany_SOURCE_DIR} / src ${Albany_SOURCE_DIR} / src / evaluators
                     ${Albany_SOURCE_DIR} / src / problems ${Albany_SOURCE_DIR} / src / responses

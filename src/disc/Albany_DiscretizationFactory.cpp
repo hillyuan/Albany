@@ -34,7 +34,7 @@
 #include "Albany_PUMIDiscretization.hpp"
 #include "Albany_PUMIMeshStruct.hpp"
 #endif
-#ifdef ALBANY_AMP
+#if defined(ALBANY_AMP) || defined(ALBANY_WAFERLG)
 #include "Albany_SimDiscretization.hpp"
 #include "Albany_SimMeshStruct.hpp"
 #endif
@@ -356,7 +356,7 @@ Albany::DiscretizationFactory::createMeshStruct(Teuchos::RCP<Teuchos::ParameterL
                 << " requested, but not compiled in" << std::endl);
 #endif
     } else if (method == "Sim") {
-#ifdef ALBANY_AMP
+#if defined(ALBANY_AMP) || defined(ALBANY_WAFERLG)
         return Teuchos::rcp(new Albany::SimMeshStruct(disc_params, comm));
 #else
         TEUCHOS_TEST_FOR_EXCEPTION(method == "Sim",
@@ -487,7 +487,7 @@ Albany::DiscretizationFactory::createDiscretizationFromInternalMeshStruct(
                 break;
 #endif
 
-#ifdef ALBANY_AMP
+#if defined(ALBANY_AMP) || defined(ALBANY_WAFERLG)
             case Albany::AbstractMeshStruct::SIM_MS:
             {
                 Teuchos::RCP<Albany::SimMeshStruct> ms = Teuchos::rcp_dynamic_cast<Albany::SimMeshStruct>(meshStruct);
@@ -516,7 +516,7 @@ Albany::DiscretizationFactory::setDiscretizationParameters(Teuchos::RCP<Teuchos:
     discParams = disc_params;
 }
 
-#ifdef ALBANY_AMP
+#if defined(ALBANY_AMP) || defined(ALBANY_WAFERLG)
 /* This function overwrite previous number of equations in mesh structure */
 void
 Albany::DiscretizationFactory::setNumberOfEquations(int neq) {

@@ -112,7 +112,7 @@ struct AbstractMeshStruct {
 #ifdef ALBANY_SCOREC
       PUMI_MS,
 #endif
-#ifdef ALBANY_AMP
+#if defined(ALBANY_AMP) || defined(ALBANY_WAFERLG)
       SIM_MS,
 #endif
     };
