@@ -9,7 +9,6 @@
 
 // Always enable HeatProblem and SideLaplacianProblem
 #include "Albany_HeatProblem.hpp"
-#include "Albany_ThermoConductProblem.hpp"
 #include "Albany_PopulateMesh.hpp"
 #include "Albany_SideLaplacianProblem.hpp"
 
@@ -71,6 +70,10 @@
 #include "AMP/problems/AMPThermoMechanics.hpp"
 #endif
 
+#ifdef ALBANY_WAFERLG
+#include "WAFERLG/problems/WAFERLGThermoMechanics.hpp"
+#endif
+
 #ifdef ALBANY_ANISO
 #include "ANISO/AdvectionProblem.hpp"
 #endif
@@ -129,7 +132,6 @@ Albany::ProblemFactory::create()
   else if (method == "Heat 3D") {
     strategy = rcp(new Albany::HeatProblem(problemParams, paramLib, 3, commT));
   }
-  else if (method == "ThermoConduct") {
     strategy = rcp(new Albany::ThermoConductProblem(problemParams, paramLib, 3, commT));
   }
   else if (method == "Populate Mesh") {
@@ -326,6 +328,17 @@ Albany::ProblemFactory::create()
   }
   else if (method == "AMPThermoMechanics 3D") {
     strategy = rcp(new Albany::AMPThermoMechanics(problemParams, paramLib, 3, commT));
+  }
+#endif
+#ifdef ALBANY_WAFERLG
+  else if (method == "WAFERLGThermoMechanics 1D") {
+    strategy = rcp(new Albany::WAFERLGThermoMechanics(problemParams, paramLib, 1, commT));
+  }
+  else if (method == "WAFERLGThermoMechanics 2D") {
+    strategy = rcp(new Albany::WAFERLGThermoMechanics(problemParams, paramLib, 2, commT));
+  }
+  else if (method == "WAFERLGThermoMechanics 3D") {
+    strategy = rcp(new Albany::WAFERLGThermoMechanics(problemParams, paramLib, 3, commT));
   }
 #endif
 #ifdef ALBANY_ANISO

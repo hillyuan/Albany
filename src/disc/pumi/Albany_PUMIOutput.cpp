@@ -12,6 +12,9 @@
 #if defined(ALBANY_AMP)
 #include "Albany_SimOutput.hpp"
 #endif
+#if defined(ALBANY_WAFERLG)
+#include "Albany_SimOutput.hpp"
+#endif
 
 Albany::PUMIOutput::~PUMIOutput() {
 }
@@ -25,7 +28,7 @@ Albany::PUMIOutput* Albany::PUMIOutput::create(
   if (meshStruct->outputFileName.find("exo") != std::string::npos)
     return new PUMIExodus(meshStruct, comm);
 #endif
-#if defined(ALBANY_AMP)
+#if defined(ALBANY_AMP) || defined(ALBANY_WAFERLG)
   if (meshStruct->outputFileName.find("sms") != std::string::npos)
     return new SimOutput(meshStruct, comm);
 #endif
