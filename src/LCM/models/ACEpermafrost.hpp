@@ -71,6 +71,7 @@ struct ACEpermafrostMiniKernel : public ParallelKernel<EvalT, Traits>
   ScalarField heat_capacity_;
   ScalarField ice_saturation_;
   ScalarField thermal_cond_;
+  ScalarField thermal_inertia_;
   ScalarField water_saturation_;
 
   // Mechanical MDFields
@@ -89,13 +90,18 @@ struct ACEpermafrostMiniKernel : public ParallelKernel<EvalT, Traits>
   // Baseline constants
   RealType ice_density_{0.0};
   RealType water_density_{0.0};
+  RealType sediment_density_{0.0};
   RealType ice_thermal_cond_{0.0};
   RealType water_thermal_cond_{0.0};
+  RealType sediment_thermal_cond_{0.0};
   RealType ice_heat_capacity_{0.0};
+  RealType water_heat_capacity_{0.0};
+  RealType sediment_heat_capacity_{0.0};
   RealType ice_saturation_init_{0.0};
   RealType ice_saturation_max_{0.0};
   RealType water_saturation_min_{0.0};
   RealType porosity_{0.0};
+  RealType latent_heat_{0.0};
 
   // Saturation hardening constraints
   RealType sat_mod_{0.0};
