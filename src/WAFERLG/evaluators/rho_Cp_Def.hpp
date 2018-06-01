@@ -19,13 +19,10 @@ namespace WAFERLG {
   rho_Cp<EvalT, Traits>::
   rho_Cp(Teuchos::ParameterList& p, const Teuchos::RCP<Albany::Layouts>& dl) :
     coord_      (p.get<std::string>("Coordinate Name"),dl->qp_vector),
-    porosity_   (p.get<std::string>("Porosity Name"),dl->qp_scalar),
-    rho_cp_     (p.get<std::string>("rho_Cp Name"),dl->qp_scalar),
-    hasConsolidation_ (p.get<bool>("Compute Consolidation"))
+    rho_cp_     (p.get<std::string>("rho_Cp Name"),dl->qp_scalar)
   {
 
     this->addDependentField(coord_);
-    this->addDependentField(porosity_);
     this->addEvaluatedField(rho_cp_);
  
     Teuchos::RCP<PHX::DataLayout> scalar_dl = dl->qp_scalar;
@@ -46,9 +43,6 @@ namespace WAFERLG {
     ScalarT value = cond_list->get("Value", 1.0);
     init_constant(value,p);
 
-    cond_list = p.get<Teuchos::ParameterList*>("Porosity Parameter List");
-    Initial_porosity = cond_list->get("Value", 0.0);
-
     this->setName("rho_Cp"+PHX::typeAsString<EvalT>());
   }
 
@@ -66,7 +60,6 @@ namespace WAFERLG {
 			PHX::FieldManager<Traits>& fm)
   {
     this->utils.setFieldData(coord_,fm);
-    this->utils.setFieldData(porosity_,fm);
     this->utils.setFieldData(rho_cp_,fm);
   }
 
@@ -75,23 +68,15 @@ namespace WAFERLG {
   void rho_Cp<EvalT, Traits>::
   evaluateFields(typename Traits::EvalData workset)
   {
-
     // current time
     const RealType time = workset.current_time;
 
-    if (hasConsolidation_) {
-      for (std::size_t cell = 0; cell < workset.numCells; ++cell) {
-	for (std::size_t qp = 0; qp < num_qps_; ++qp) {
-	  rho_cp_(cell, qp) = constant_value_ * (1.0 - porosity_(cell, qp));
-	}
-      }
-    } else {
       for (std::size_t cell = 0; cell < workset.numCells; ++cell) {
 	for (std::size_t qp = 0; qp < num_qps_; ++qp) {
 	  rho_cp_(cell, qp) = constant_value_;
 	}
       }
-    }
+    
   }
 
   //**********************************************************************

@@ -30,7 +30,6 @@ namespace WAFERLG {
     psi2_             (p.get<std::string>("Psi2 Name"), dl->qp_scalar),
     phi1_             (p.get<std::string>("Phi1 Name"), dl->qp_scalar),
     phi2_             (p.get<std::string>("Phi2 Name"), dl->qp_scalar),
-    porosity_         (p.get<std::string>("Porosity Name"),dl->qp_scalar),
     energyDot_        (p.get<std::string>("Energy Rate Name"), dl->qp_scalar),
     deltaTime         (p.get<std::string>("Delta Time Name"), dl->workset_scalar),
     residual_         (p.get<std::string>("Residual Name"), dl->node_scalar)
@@ -48,7 +47,6 @@ namespace WAFERLG {
     this->addDependentField(phi2_);
     this->addDependentField(psi1_);
     this->addDependentField(psi2_);
-    this->addDependentField(porosity_);
     this->addDependentField(energyDot_);
     this->addDependentField(time);
     this->addDependentField(deltaTime);
@@ -56,11 +54,8 @@ namespace WAFERLG {
     this->addEvaluatedField(residual_);
   
   
-    Teuchos::ParameterList* cond_list = p.get<Teuchos::ParameterList*>("Porosity Parameter List");
   
-    Initial_porosity = cond_list->get("Value", 0.0);
-  
-    hasConsolidation_  = p.get<bool>("Compute Consolidation");
+
   
     std::vector<PHX::Device::size_type> dims;
     w_grad_bf_.fieldTag().dataLayout().dimensions(dims);
@@ -96,7 +91,6 @@ namespace WAFERLG {
     this->utils.setFieldData(phi2_,fm);
     this->utils.setFieldData(psi1_,fm);
     this->utils.setFieldData(psi2_,fm);
-    this->utils.setFieldData(porosity_,fm);
     this->utils.setFieldData(energyDot_,fm);
     this->utils.setFieldData(residual_,fm);
 
@@ -141,50 +135,7 @@ namespace WAFERLG {
     ScalarT Coeff_volExp = 65.2e-6; //per kelvins
     ScalarT Ini_temp = 300; //kelvins
    
-    if (hasConsolidation_) {
-      for (int cell = 0; cell < workset.numCells; ++cell) {
-	for (int qp = 0; qp < num_qps_; ++qp) {
-	  for (int node = 0; node < num_nodes_; ++node) {
-	    porosity_function1 = pow(	((1.0 - porosity_(cell, qp)) / (1.0 - Initial_porosity)), 2);
-	    porosity_function2 = (1.0 - Initial_porosity) / (1.0 - porosity_(cell, qp));					
-	    residual_(cell, node) += porosity_function2 * (
-							   w_grad_bf_(cell, node, qp, 0) * term1_(cell, qp, 0)
-							   + w_grad_bf_(cell, node, qp, 1) * term1_(cell, qp, 1)
-							   + porosity_function1 * w_grad_bf_(cell, node, qp, 2) * term1_(cell, qp, 2));
-	  }
-	}
-      }
-
-      // heat source from laser 
-      for (int cell = 0; cell < workset.numCells; ++cell) {
-	for (int qp = 0; qp < num_qps_; ++qp) {
-	  for (int node = 0; node < num_nodes_; ++node) {
-	    porosity_function2 = (1.0 - Initial_porosity) / (1.0 - porosity_(cell, qp));
-	    residual_(cell, node) -= porosity_function2 * (w_bf_(cell, node, qp) * laser_source_(cell, qp));
-	  }
-	}
-      }
-
-      // all other problem sources
-      for (int cell = 0; cell < workset.numCells; ++cell) {
-	for (int qp = 0; qp < num_qps_; ++qp) {
-	  for (int node = 0; node < num_nodes_; ++node) {
-	    porosity_function2 = (1.0 - Initial_porosity) / (1.0 - porosity_(cell, qp));
-	    residual_(cell, node) -= porosity_function2 * (w_bf_(cell, node, qp) * source_(cell, qp));
-	  }
-	}
-      }
-
-      // transient term
-      for (int cell = 0; cell < workset.numCells; ++cell) {
-	for (int qp = 0; qp < num_qps_; ++qp) {
-	  for (int node = 0; node < num_nodes_; ++node) {
-	    porosity_function2 = (1.0 - Initial_porosity) / (1.0 - porosity_(cell, qp));
-	    residual_(cell, node) += porosity_function2 * (w_bf_(cell, node, qp) * energyDot_(cell, qp));
-	  }
-	}
-      }
-    } else { // does not have consolidation
+ 
       for (int cell = 0; cell < workset.numCells; ++cell) {
 	for (int qp = 0; qp < num_qps_; ++qp) {
 	  for (int node = 0; node < num_nodes_; ++node) {
@@ -221,7 +172,7 @@ namespace WAFERLG {
       }
     }
          
-  }
+  
 
   //*********************************************************************
 }

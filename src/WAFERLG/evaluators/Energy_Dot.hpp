@@ -73,8 +73,6 @@ namespace WAFERLG {
     ScalarT Tc_;
     // Dense state volumetric heat capacity
     ScalarT Cd;
-    //Initial Porosity
-    ScalarT Initial_porosity;
     //Latent Heat of Vapourization
     ScalarT Lv_;
     //Volumetric heat capacity of Vapour
@@ -92,9 +90,6 @@ namespace WAFERLG {
     //old psi name
     std::string Psi1_old_name_;
     std::string Psi2_old_name_;
-
-    // variable use to decide if consolidation must be computed
-    bool hasConsolidation_;
 
     Teuchos::RCP<const Teuchos::ParameterList>
     getValidEnergy_DotParameters() const;

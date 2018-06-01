@@ -55,7 +55,6 @@ namespace WAFERLG {
     PHX::MDField<ScalarT,Cell,QuadPoint> phi2_;
     PHX::MDField<ScalarT,Cell,QuadPoint> psi1_;
     PHX::MDField<ScalarT,Cell,QuadPoint> psi2_;
-    PHX::MDField<ScalarT,Cell,QuadPoint> porosity_;
     PHX::MDField<ScalarT,Cell,QuadPoint> energyDot_;
     PHX::MDField<ScalarT,Cell,QuadPoint> laser_source_;
     PHX::MDField<ScalarT,Dummy> time;
@@ -68,12 +67,7 @@ namespace WAFERLG {
     unsigned int num_nodes_;
     unsigned int workset_size_;
   
-    ScalarT Initial_porosity;
-    ScalarT porosity_function1;
-    ScalarT porosity_function2;
   
-    // variable use to decide if consolidation must be computed
-    bool hasConsolidation_;
 
     bool enable_transient_;
     std::string Temperature_Name_;

@@ -58,9 +58,7 @@ namespace Albany {
     Teuchos::RCP<const Teuchos::ParameterList> 
     getValidProblemParameters() const;
   
-    // This function return true if compute consolidation was specified in the
-    // input deck. By default consolidation is on.
-    bool hasConsolidation() const;
+
   
 
   private:
@@ -92,9 +90,6 @@ namespace Albany {
 
     Teuchos::RCP<Albany::MaterialDatabase> material_db_;
   
-    // this variable is used to specify if we want to include consolidation
-    // or not in the model. It may be removed in the future.
-    bool hasConsolidation_;
 
     Teuchos::RCP<Albany::Layouts> dl_;
 
@@ -118,7 +113,7 @@ namespace Albany {
 #include "Psi1.hpp"
 #include "Phi2.hpp"
 #include "Psi2.hpp"
-#include "LocalPorosity.hpp"
+
 #include "ThCond.hpp"
 #include "Phase_Source.hpp" 
 #include "Laser_Source.hpp"
@@ -450,16 +445,11 @@ Albany::WAFERLGThermoMechanics::constructEvaluators(
 
     //Input
     p->set<string>("Coordinate Name","Coord Vec");
-    p->set<string>("Porosity Name", "Porosity");
+
     p->set<Teuchos::ParameterList*>("Parameter List", &param_list);
     
-    // has consolidation?
-    p->set<bool>("Compute Consolidation",hasConsolidation());
 
-    // take porosity parameter list
-    Teuchos::ParameterList& param_list_porosity =
-      material_db_->getElementBlockSublist(eb_name, "Porosity");
-    p->set<Teuchos::ParameterList*>("Porosity Parameter List", &param_list_porosity);
+
 
     //Output
     p->set<string>("rho_Cp Name", "rho_Cp");
@@ -468,23 +458,7 @@ Albany::WAFERLGThermoMechanics::constructEvaluators(
     fm0.template registerEvaluator<EvalT>(ev);
   }
   
-  { // LocalPorosity
-    RCP<ParameterList> p = rcp(new ParameterList("Porosity"));
 
-    Teuchos::ParameterList& param_list =
-      material_db_->getElementBlockSublist(eb_name, "Porosity");    
-
-    //Input
-    p->set<string>("Coordinate Name","Coord Vec");
-    p->set<string>("Psi1 Name", "Psi1");
-    p->set<Teuchos::ParameterList*>("Parameter List", &param_list);
-
-    //Output
-    p->set<string>("Porosity Name", "Porosity");
-
-    ev = rcp(new WAFERLG::LocalPorosity<EvalT,AlbanyTraits>(*p,dl_));
-    fm0.template registerEvaluator<EvalT>(ev);
-  }
   
   { // Source Function
     RCP<ParameterList> p = rcp(new ParameterList("Source Function"));
@@ -523,7 +497,6 @@ Albany::WAFERLGThermoMechanics::constructEvaluators(
     p->set<string>("Coordinate Name","Coord Vec");
     p->set<string>("Time Name","Time");
     p->set<string>("Delta Time Name","Delta Time");
-    p->set<string>("Porosity Name", "Porosity");
     p->set<Teuchos::ParameterList*>("Parameter List", &param_list);
 
     //Output
@@ -564,8 +537,6 @@ Albany::WAFERLGThermoMechanics::constructEvaluators(
     p->set<string>("rho_Cp Name", "rho_Cp");
     p->set<Teuchos::ParameterList*>("Phase Change Parameter List", &param_list_phase);
 
-    // has consolidation?
-    p->set<bool>("Compute Consolidation",hasConsolidation());
 
     // take initial Phi1 parameter list
     Teuchos::ParameterList& param_list_phi1 =
@@ -587,10 +558,7 @@ Albany::WAFERLGThermoMechanics::constructEvaluators(
       material_db_->getElementBlockSublist(eb_name, "Initial Psi2");
     p->set<Teuchos::ParameterList*>("Initial Psi2 Parameter List", &param_list_psi2);
 
-    // take porosity parameter list
-    Teuchos::ParameterList& param_list_porosity =
-      material_db_->getElementBlockSublist(eb_name, "Porosity");
-    p->set<Teuchos::ParameterList*>("Porosity Parameter List", &param_list_porosity);
+
 
     // take rho_Cp parameter list
     Teuchos::ParameterList& param_list_rho_Cp =
@@ -632,18 +600,14 @@ Albany::WAFERLGThermoMechanics::constructEvaluators(
     p->set<string>("Phi2 Name","Phi2");
     p->set<string>("Psi1 Name","Psi1");
     p->set<string>("Psi2 Name","Psi2");
-    p->set<string>("Porosity Name", "Porosity");
+
     p->set<string>("Energy Rate Name", "Energy Rate");
     p->set<string>("Time Name","Time");
     p->set<string>("Delta Time Name","Delta Time");
     
-    // has consolidation?
-    p->set<bool>("Compute Consolidation",hasConsolidation());
+
     
-    // take porosity parameter list
-    Teuchos::ParameterList& param_list_porosity =
-      material_db_->getElementBlockSublist(eb_name, "Porosity");
-    p->set<Teuchos::ParameterList*>("Porosity Parameter List", &param_list_porosity);
+
 
     //Output
     p->set<string>("Residual Name", "Temperature Residual");

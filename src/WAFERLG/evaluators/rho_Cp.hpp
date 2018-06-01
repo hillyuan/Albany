@@ -45,21 +45,16 @@ namespace WAFERLG {
     typedef typename EvalT::MeshScalarT MeshScalarT;
 
     ScalarT constant_value_;
-    ScalarT Initial_porosity;
     void init_constant(ScalarT value, Teuchos::ParameterList& p);
 
     PHX::MDField<MeshScalarT,Cell,QuadPoint,Dim> coord_;
     PHX::MDField<ScalarT,Cell,QuadPoint> rho_cp_;
-    PHX::MDField<ScalarT,Cell,QuadPoint> porosity_;
 
     unsigned int num_qps_;
     unsigned int num_dims_;
     unsigned int num_nodes_;
     unsigned int workset_size_;
   
-    // variable use to decide if consolidation must be computed
-    bool hasConsolidation_;
-
     Teuchos::RCP<const Teuchos::ParameterList>
     getValidrho_CpParameters() const;
 
