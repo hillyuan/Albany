@@ -51,61 +51,80 @@ Laser_Source(Teuchos::ParameterList& p,
 
   // dummy variable used multiple times below
   std::string type; 
+
+    type = cond_list->get("Laser Beam Radius Type", "Constant");
+    laser_beam_radius = cond_list->get("Laser Beam Radius Value", 1.0);
+
+    type = cond_list->get("Average Laser Power Type", "Constant");
+    average_laser_power = cond_list->get("Average Laser Power Value", 1.0);
+
+    type = cond_list->get("Extinction coefficient Type", "Constant");
+    extinction_coeff = cond_list->get("Extinction coefficient Value", 1.0);
+
+    type = cond_list->get("Laser Pulse Frequency Type", "Constant");
+    laser_pulse_frequency = cond_list->get("Laser Pulse Frequency Value", 1.0);
+
+    type = cond_list->get("Reflectivity Type", "Constant");
+    reflectivity =  cond_list->get("Reflectivity Value", 1.0);
+
+
+    	std::cout<<"laser_beam_radius ="<<laser_beam_radius<<std::endl;
+	std::cout<<"average_laser_power ="<<average_laser_power<<std::endl;
+	std::cout<<"extinction_coeff ="<<extinction_coeff<<std::endl;
+	std::cout<<"laser_pulse_frequency ="<<laser_pulse_frequency<<std::endl;
+	std::cout<<"reflectivity ="<<reflectivity<<std::endl;
   
-  type = cond_list->get("Laser Beam Radius Type", "Constant");
-  ScalarT value_laser_beam_radius = cond_list->get("Laser Beam Radius Value", 1.0);
-  init_constant_laser_beam_radius(value_laser_beam_radius,p);
+//  type = cond_list->get("Average Laser Power Type", "Constant");
+  //ScalarT value_average_laser_power = cond_list->get("Average Laser Power Value", 1.0);
+  //init_constant_average_laser_power(value_average_laser_power,p);
 
-  type = cond_list->get("Laser Power Type", "Constant");
-  ScalarT value_laser_power = cond_list->get("Laser Power Value", 1.0);
-  init_constant_laser_power(value_laser_power,p);
+ // type = cond_list->get("Extinction coefficient Type", "Constant");
+ // ScalarT value_extinction_coeff = cond_list->get("Extinction coefficient Value", 1.0);
+ // init_constant_extinction_coeff(value_extinction_coeff,p);
 
-  type = cond_list->get("Porosity Type", "Constant");
-  ScalarT value_porosity = cond_list->get("Porosity Value", 1.0);
-  init_constant_porosity(value_porosity,p);
+/*  type = cond_list->get("Laser Pulse Frequency Type", "Constant");
+  ScalarT value_laser_pulse_frequency = cond_list->get("Laser Pulse Frequency Value", 1.0);
+  init_constant_laser_pulse_frequency(value_laser_pulse_frequency,p);
+*/
 
-  type = cond_list->get("Particle Dia Type", "Constant");
-  ScalarT value_particle_dia = cond_list->get("Particle Dia Value", 1.0);
-  init_constant_particle_dia(value_particle_dia,p);
-
-  type = cond_list->get("Powder Hemispherical Reflectivity Type", "Constant");
-  ScalarT value_powder_hemispherical_reflectivity = cond_list->get("Powder Hemispherical Reflectivity Value", 1.0);
-  init_constant_powder_hemispherical_reflectivity(value_powder_hemispherical_reflectivity,p);
+/*
+  type = cond_list->get("Reflectivity Type", "Constant");
+  ScalarT value_reflectivity = cond_list->get("Reflectivity Value", 1.0);
+  init_constant_reflectivity(value_reflectivity,p);
+*/
 
   this->setName("Laser_Source"+PHX::typeAsString<EvalT>());
 
 }
 
 //**********************************************************************
-template<typename EvalT, typename Traits>
-void Laser_Source<EvalT, Traits>::
-init_constant_porosity(ScalarT value_porosity, Teuchos::ParameterList& p){
-  porosity = value_porosity;
-}
+//template<typename EvalT, typename Traits>
+//void Laser_Source<EvalT, Traits>::
+//init_constant_extinction_coeff(ScalarT value_extinction_coeff, Teuchos::ParameterList& p){
+//  extinction_coeff = value_extinction_coeff;
+//}
 
+/*
 template<typename EvalT, typename Traits>
 void Laser_Source<EvalT, Traits>::
-init_constant_particle_dia(ScalarT value_particle_dia, Teuchos::ParameterList& p){
-  particle_dia = value_particle_dia;
+init_constant_laser_pulse_frequency(ScalarT value_laser_pulse_frequency, Teuchos::ParameterList& p){
+  laser_pulse_frequency = value_laser_pulse_frequency;
 }
+*/
 
-template<typename EvalT, typename Traits>
-void Laser_Source<EvalT, Traits>::
-init_constant_laser_beam_radius(ScalarT value_laser_beam_radius, Teuchos::ParameterList& p){
-  laser_beam_radius = value_laser_beam_radius;
-}
+//template<typename EvalT, typename Traits>
+//void Laser_Source<EvalT, Traits>::
+//init_constant_average_laser_power(ScalarT value_average_laser_power, Teuchos::ParameterList& p){
+//  average_laser_power = value_average_laser_power;
+//}
 
+/*
 template<typename EvalT, typename Traits>
 void Laser_Source<EvalT, Traits>::
-init_constant_laser_power(ScalarT value_laser_power, Teuchos::ParameterList& p){
-  laser_power = value_laser_power;
+init_constant_reflectivity(ScalarT value_reflectivity, Teuchos::ParameterList& p){
+  reflectivity = value_reflectivity;
 }
-
-template<typename EvalT, typename Traits>
-void Laser_Source<EvalT, Traits>::
-init_constant_powder_hemispherical_reflectivity(ScalarT value_powder_hemispherical_reflectivity, Teuchos::ParameterList& p){
-  powder_hemispherical_reflectivity = value_powder_hemispherical_reflectivity;
-}
+*/
 
 //**********************************************************************
 template<typename EvalT, typename Traits>
@@ -125,7 +144,11 @@ void Laser_Source<EvalT, Traits>::
 evaluateFields(typename Traits::EvalData workset)
 {
   // current time
- const RealType t = workset.current_time;
+  const RealType t = workset.current_time;
+  // time step
+  ScalarT dt = deltaTime(0);
+    if (dt == 0.0) dt = 1.0e-6;
+  
   
   WAFERLG::LaserCenter Val;
   Val.t = t;
@@ -137,36 +160,26 @@ evaluateFields(typename Traits::EvalData workset)
   ScalarT Laser_center_y = y;
   ScalarT Laser_power_fraction = power_fraction;
 
+  //Instantaneous Laser Power at each pulse
+  instantaneous_laser_power = average_laser_power/(laser_pulse_frequency*dt);
+  
+
   // source function
   ScalarT pi = 3.1415926535897932;
   ScalarT LaserFlux_Max;
   // laser on or off
   if ( power == 1 )
     {
-      LaserFlux_Max =(3.0/(pi*laser_beam_radius*laser_beam_radius))*laser_power*Laser_power_fraction;
+      //LaserFlux_Max =(2.0/(pi*laser_beam_radius*laser_beam_radius))*instantaneous_laser_power*Laser_power_fraction;
+      LaserFlux_Max =(2.0/(pi*laser_beam_radius*laser_beam_radius))*average_laser_power*Laser_power_fraction;
     }
   else
     {
       LaserFlux_Max = 0.0;
     }
-  ScalarT beta = 1.5*(1.0 - porosity)/(porosity*particle_dia);
+ 
 
-//  Parameters for the depth profile of the laser heat source:
-  //Depth of powder bed (Needs to be changed as per the model)
-  ScalarT PB_depth = 50e-6;
-  ScalarT lambda = PB_depth*beta;
-  ScalarT a = sqrt(1.0 - powder_hemispherical_reflectivity);
-  ScalarT A = (1.0 - pow(powder_hemispherical_reflectivity,2))*exp(-lambda);
-  ScalarT B = 3.0 + powder_hemispherical_reflectivity*exp(-2*lambda);
-  ScalarT b1 = 1 - a;
-  ScalarT b2 = 1 + a;
-  ScalarT c1 = b2 - powder_hemispherical_reflectivity*b1;
-  ScalarT c2 = b1 - powder_hemispherical_reflectivity*b2;
-  ScalarT C = b1*c2*exp(-2*a*lambda) - b2*c1*exp(2*a*lambda);
-//  Following are few factors defined by the coder to be included while defining the depth profile
-  ScalarT f1 = 1.0/(3.0 - 4.0*powder_hemispherical_reflectivity);
-  ScalarT f2 = 2*powder_hemispherical_reflectivity*a*a/C;
-  ScalarT f3 = 3.0*(1.0 - powder_hemispherical_reflectivity);
+  
 
 //-----------------------------------------------------------------------------------------------
   for (std::size_t cell = 0; cell < workset.numCells; ++cell) {
@@ -175,14 +188,13 @@ evaluateFields(typename Traits::EvalData workset)
 	  MeshScalarT Y = coord_(cell,qp,1);
 	  MeshScalarT Z = coord_(cell,qp,2);
 
-    ScalarT depth_profile = f1*(f2*(A*(b2*exp(2.0*a*beta*Z)-b1*exp(-2.0*a*beta*Z)) - B*(c2*exp(-2.0*a*(lambda - beta*Z))-c1*exp(2.0*a*(lambda-beta*Z)))) + f3*(exp(-beta*Z)+powder_hemispherical_reflectivity*exp(beta*Z - 2.0*lambda)));
-    MeshScalarT* XX = &coord_(cell,qp,0);
-    ScalarT radius = sqrt((X - Laser_center_x)*(X - Laser_center_x) + (Y - Laser_center_y)*(Y - Laser_center_y));
-     if (radius < laser_beam_radius && beta*Z <= lambda)
-            laser_source_(cell,qp) = beta*LaserFlux_Max*pow((1.0-(radius*radius)/(laser_beam_radius*laser_beam_radius)),2)*depth_profile;
-     else   laser_source_(cell,qp) = 0.0;
-	
-	
+        ScalarT radius = sqrt((X - Laser_center_x)*(X - Laser_center_x) + (Y - Laser_center_y)*(Y - Laser_center_y));
+	ScalarT depth_profile = exp(-extinction_coeff*Z);
+	ScalarT surface_profile = exp(-2.0*(radius*radius)/(laser_beam_radius*laser_beam_radius));
+	if (radius < laser_beam_radius)
+	//laser_source_(cell,qp) = extinction_coeff*(1.0 - reflectivity)*LaserFlux_Max*surface_profile*depth_profile;
+	laser_source_(cell,qp) = extinction_coeff*(1.0 - reflectivity)*LaserFlux_Max*surface_profile*depth_profile;
+	else   laser_source_(cell,qp) = 0.0;
     }
   }
 }
@@ -198,17 +210,17 @@ getValidLaser_SourceParameters() const
   valid_pl->set<std::string>("Laser Beam Radius Type", "Constant");
   valid_pl->set<double>("Laser Beam Radius Value", 1.0);
 
-  valid_pl->set<std::string>("Laser Power Type", "Constant");
-  valid_pl->set<double>("Laser Power Value", 1.0);
+  valid_pl->set<std::string>("Average Laser Power Type", "Constant");
+  valid_pl->set<double>("Average Laser Power Value", 1.0);
 
-  valid_pl->set<std::string>("Porosity Type", "Constant");
-  valid_pl->set<double>("Porosity Value", 1.0);
+  valid_pl->set<std::string>("Extinction coefficient Type", "Constant");
+  valid_pl->set<double>("Extinction coefficient Value", 1.0);
 
-  valid_pl->set<std::string>("Particle Dia Type", "Constant");
-  valid_pl->set<double>("Particle Dia Value", 1.0);
+  valid_pl->set<std::string>("Laser Pulse Frequency Type", "Constant");
+  valid_pl->set<double>("Laser Pulse Frequency Value", 1.0);
 
-  valid_pl->set<std::string>("Powder Hemispherical Reflectivity Type", "Constant");
-  valid_pl->set<double>("Powder Hemispherical Reflectivity Value", 1.0);
+  valid_pl->set<std::string>("Reflectivity Type", "Constant");
+  valid_pl->set<double>("Reflectivity Value", 1.0);
 
   return valid_pl;
 }

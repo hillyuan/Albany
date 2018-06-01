@@ -49,17 +49,19 @@ namespace WAFERLG {
     typedef typename EvalT::ScalarT ScalarT;
     typedef typename EvalT::MeshScalarT MeshScalarT;
 
-    ScalarT porosity;
-    ScalarT particle_dia;
+    ScalarT extinction_coeff;
+    ScalarT laser_wavelength; 
+    ScalarT laser_pulse_frequency;
     ScalarT laser_beam_radius;
-    ScalarT laser_power;
-    ScalarT powder_hemispherical_reflectivity;
+    ScalarT average_laser_power;
+    ScalarT instantaneous_laser_power;
+    ScalarT reflectivity;
   
-    void init_constant_porosity(ScalarT value_porosity, Teuchos::ParameterList& p);
-    void init_constant_particle_dia(ScalarT value_particle_dia, Teuchos::ParameterList& p);
+    void init_constant_extinction_coeff(ScalarT value_extinction_coeff, Teuchos::ParameterList& p);
+    void init_constant_laser_pulse_frequency(ScalarT value_particle_dia, Teuchos::ParameterList& p);
     void init_constant_laser_beam_radius(ScalarT value_laser_beam_radius, Teuchos::ParameterList& p);
-    void init_constant_laser_power(ScalarT value_laser_power, Teuchos::ParameterList& p);
-    void init_constant_powder_hemispherical_reflectivity(ScalarT value_powder_hemispherical_reflectivity, Teuchos::ParameterList& p);
+    void init_constant_average_laser_power(ScalarT value_average_laser_power, Teuchos::ParameterList& p);
+    void init_constant_reflectivity(ScalarT value_reflectivity, Teuchos::ParameterList& p);
 
     PHX::MDField<MeshScalarT,Cell,QuadPoint,Dim> coord_;
     PHX::MDField<ScalarT,Cell,QuadPoint> laser_source_;

@@ -207,6 +207,7 @@ namespace WAFERLG {
 	      // compute dT/dt using finite difference
 	      T_dot_(cell, qp) = (T_(cell, qp) - T_old(cell, qp)) / dt;
 
+
 	      phi1 = phi1_(cell, qp);
 	      dpdphi1 = 30.0 * phi1 * phi1 * (1.0 - 2.0 * phi1 + phi1 * phi1);
 
