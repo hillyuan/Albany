@@ -1176,26 +1176,30 @@ void Albany::GenericSTKMeshStruct::loadRequiredInputFields (const AbstractFieldC
     ss << "Field " << ifield;
     Teuchos::ParameterList& fparams = req_fields_info->sublist(ss.str());
 
+    // First, get the name and usage of the field, and check if it's used
     fname = fparams.get<std::string>("Field Name");
+    fusage = fparams.get<std::string>("Field Usage", "Input");
+    if (fusage == "Unused") {
+      *out << "  - Skipping field '" << fname << "' since it's listed as unused.\n";
+      continue;
+    }
+
+    // The field is used somehow. Check that it is present in the mesh
     ftype = fparams.get<std::string>("Field Type","INVALID");
     checkFieldIsInMesh(fname, ftype);
     missing.erase(fname);
 
-    fusage = fparams.get<std::string>("Field Usage", "Input");
-    if (fusage == "Output")
-    {
+    // Check if it's an output file (nothing to be done then). If not, check that the usage is a valid string
+    if (fusage == "Output") {
       *out << "  - Skipping field '" << fname << "' since it's listed as output. Make sure there's an evaluator set to save it!\n";
-      continue;
-    } else if (fusage == "Unused") {
-      *out << "  - Skipping field '" << fname << "' since it's listed as unused.\n";
       continue;
     } else {
       TEUCHOS_TEST_FOR_EXCEPTION (fusage!="Input" && fusage!="Input-Output", Teuchos::Exceptions::InvalidParameter,
                                   "Error! 'Field Usage' for field '" << fname << "' must be one of 'Input', 'Output', 'Input-Output' or 'Unused'.\n");
     }
 
+    // Ok, it's an input (or input-output) field. Find out where the field comes from
     forigin = fparams.get<std::string>("Field Origin","INVALID");
-
     if (forigin=="Mesh") {
       *out << "  - Skipping field '" << fname << "' since it's listed as present in the mesh.\n";
       continue;
@@ -1203,6 +1207,8 @@ void Albany::GenericSTKMeshStruct::loadRequiredInputFields (const AbstractFieldC
       TEUCHOS_TEST_FOR_EXCEPTION (forigin!="File", Teuchos::Exceptions::InvalidParameter,
                                   "Error! 'Field Origin' for field '" << fname << "' must be one of 'File' or 'Mesh'.\n");
     }
+
+    // The field is not already present (with updated values) in the mesh, and must be loaded/computed filled here.
 
     // Detect load type
     bool load_ascii = fparams.isParameter("File Name");
@@ -1392,9 +1398,19 @@ void Albany::GenericSTKMeshStruct::loadField (const std::string& field_name, con
 
   if (params.isParameter("Scale Factor"))
   {
-    Teuchos::Array<double> scale_factors = params.get<Teuchos::Array<double> >("Scale Factor");
-    TEUCHOS_TEST_FOR_EXCEPTION (scale_factors.size()!=serial_req_mvec->getNumVectors(), Teuchos::Exceptions::InvalidParameter,
-                                "Error! The given scale factors vector size does not match the field dimension.\n");
+    Teuchos::Array<double> scale_factors;
+    if (params.isType<Teuchos::Array<double>>("Scale Factor")) {
+      scale_factors = params.get<Teuchos::Array<double> >("Scale Factor");
+      TEUCHOS_TEST_FOR_EXCEPTION (scale_factors.size()!=serial_req_mvec->getNumVectors(), Teuchos::Exceptions::InvalidParameter,
+                                  "Error! The given scale factors vector size does not match the field dimension.\n");
+    } else if (params.isType<double>("Scale Factor")) {
+      scale_factors.resize(serial_req_mvec->getNumVectors());
+      std::fill_n(scale_factors.begin(),scale_factors.size(),params.get<double>("Scale Factor"));
+    } else {
+      TEUCHOS_TEST_FOR_EXCEPTION (true, Teuchos::Exceptions::InvalidParameter,
+                                 "Error! Invalid type for parameter 'Scale Factor'. Should be either 'double' or 'Array(double)'.\n");
+    }
+
     *out << "   - Scaling " << field_type << " field '" << field_name << "' with scaling factors [" << scale_factors[0];
     for (int i=1; i<scale_factors.size(); ++i)
       *out << " " << scale_factors[i];
@@ -1460,7 +1476,31 @@ void Albany::GenericSTKMeshStruct::fillField (const std::string& field_name, con
       }
     }
   } else if (params.isParameter("Field Value")) {
-    Teuchos::Array<double> values = params.get<Teuchos::Array<double> >("Field Value");
+    Teuchos::Array<double> values;
+    if (params.isType<Teuchos::Array<double>>("Field Value")) {
+      values = params.get<Teuchos::Array<double> >("Field Value");
+      TEUCHOS_TEST_FOR_EXCEPTION (values.size()==0 , Teuchos::Exceptions::InvalidParameter,
+                                  "Error! The given field value array has size 0.\n");
+      TEUCHOS_TEST_FOR_EXCEPTION (values.size()==1 && !scalar , Teuchos::Exceptions::InvalidParameter,
+                                  "Error! The given field value array has size 1, but the field is not scalar.\n");
+      TEUCHOS_TEST_FOR_EXCEPTION (values.size()>1 && scalar , Teuchos::Exceptions::InvalidParameter,
+                                  "Error! The given field value array has size >1, but the field is scalar.\n");
+    } else if (params.isType<double>("Field Value")) {
+      if (scalar) {
+        values.resize(1);
+        values[0] = params.get<double>("Field Value");
+      } else {
+        TEUCHOS_TEST_FOR_EXCEPTION (!params.isParameter("Vector Dim"), std::logic_error,
+                                    "Error! Cannot determine dimension of " << field_type << " field '" << field_name << "'. "
+                                    "In order to fill with constant value, either specify 'Vector Dim', or make 'Field Value' an Array(double).\n");
+        values.resize(params.get<int>("Vector Dim"));
+        std::fill_n(values.begin(),values.size(),params.get<double>("Field Value"));
+      }
+    } else {
+      TEUCHOS_TEST_FOR_EXCEPTION (true, Teuchos::Exceptions::InvalidParameter,
+                                 "Error! Invalid type for parameter 'Field Value'. Should be either 'double' or 'Array(double)'.\n");
+    }
+
     field_mv = Teuchos::rcp(new Tpetra_MultiVector(entities_map,values.size()));
 
     if (layered) {

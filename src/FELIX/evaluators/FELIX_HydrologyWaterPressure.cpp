@@ -6,7 +6,8 @@
 
 #include "PHAL_AlbanyTraits.hpp"
 
-#include "LocalPorosity.hpp"
-#include "LocalPorosity_Def.hpp"
+#include "FELIX_HydrologyWaterPressure.hpp"
+#include "FELIX_HydrologyWaterPressure_Def.hpp"
 
-PHAL_INSTANTIATE_TEMPLATE_CLASS(WAFERLG::LocalPorosity)
+PHAL_INSTANTIATE_TEMPLATE_CLASS_WITH_EXTRA_ARGS(FELIX::HydrologyWaterPressure,true)
+PHAL_INSTANTIATE_TEMPLATE_CLASS_WITH_EXTRA_ARGS(FELIX::HydrologyWaterPressure,false)

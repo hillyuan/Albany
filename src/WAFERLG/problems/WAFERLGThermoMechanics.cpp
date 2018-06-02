@@ -18,24 +18,13 @@ WAFERLGThermoMechanics(const Teuchos::RCP<Teuchos::ParameterList>& params_,
 		       const int num_dims,
 		       Teuchos::RCP<const Teuchos::Comm<int> >& commT) :
   Albany::AbstractProblem(params_, param_lib),
-  num_dims_(num_dims), hasConsolidation_(true)
+  num_dims_(num_dims)
 {
   // Read the "MaterialDB Filename" parameter from the input deck and create the MaterialDatabase
   std::string filename = params->get<std::string>("MaterialDB Filename");
   material_db_ = Teuchos::rcp(new Albany::MaterialDatabase(filename, commT));
 
-  // get consolidation flag from material input deck. If not specified then assign true.
-  hasConsolidation_ = material_db_->getParam<bool>("Compute Consolidation",true);
-  
-  // Tell user if consolidation is on or off
-  Teuchos::RCP<Teuchos::FancyOStream> out = Teuchos::VerboseObjectBase::getDefaultOStream();
-  
-  if (! hasConsolidation_ ) {
-    *out << "*******************************" << std::endl;
-    *out << "WARNING: Consolidation is OFF" << std::endl;
-    *out << "*******************************" << std::endl;
-  }
-  
+
   
   this->setNumEquations(1);
 }
@@ -43,15 +32,6 @@ WAFERLGThermoMechanics(const Teuchos::RCP<Teuchos::ParameterList>& params_,
 Albany::WAFERLGThermoMechanics::
 ~WAFERLGThermoMechanics()
 { }
-
-// This function return true if compute consolidation was specified in the
-// input deck. By default consolidation is on.
-
-bool
-Albany::WAFERLGThermoMechanics::hasConsolidation() const
-{
-  return hasConsolidation_;
-}
 
 
 void Albany::WAFERLGThermoMechanics::

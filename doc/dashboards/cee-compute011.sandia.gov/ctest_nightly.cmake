@@ -123,7 +123,7 @@ set (CTEST_INSTALL_NAME test)
 
 if (CTEST_BUILD_CONFIGURATION MATCHES "Debug")
 # Runs tests longer if in debug mode
-   set (CTEST_TEST_TIMEOUT 1200)
+   set (CTEST_TEST_TIMEOUT 2400)
 endif ()
 
 set (PREFIX_DIR /projects/albany)
@@ -549,7 +549,7 @@ set (COMMON_CONFIGURE_OPTIONS
 
 if (CTEST_BUILD_CONFIGURATION MATCHES "Debug")
    set (COMMON_CONFIGURE_OPTIONS ${COMMON_CONFIGURE_OPTIONS}
-     "-DDART_TESTING_TIMEOUT:STRING=1200"
+     "-DDART_TESTING_TIMEOUT:STRING=2400"
    )
 else ()
    set (COMMON_CONFIGURE_OPTIONS ${COMMON_CONFIGURE_OPTIONS}
@@ -706,8 +706,8 @@ if (BUILD_TRILINOSCLANG)
     "-DMPI_BASE_DIR:PATH=${PREFIX_DIR}/clang"
     #
     "-DCMAKE_CXX_COMPILER:STRING=/projects/albany/clang/bin/mpicxx"
-#    "-DCMAKE_CXX_FLAGS:STRING='-msoft-float -march=native -O3 -DNDEBUG ${extra_cxx_flags}'"
-    "-DCMAKE_CXX_FLAGS:STRING='-march=native -O3 -DNDEBUG ${extra_cxx_flags}'"
+#    "-DCMAKE_CXX_FLAGS:STRING='-msoft-float -march=native -O3 -Wno-inconsistent-missing-override -DNDEBUG ${extra_cxx_flags}'"
+    "-DCMAKE_CXX_FLAGS:STRING='-march=native -O3 -DNDEBUG -Wno-inconsistent-missing-override ${extra_cxx_flags}'"
     "-DCMAKE_C_COMPILER:STRING=/projects/albany/clang/bin/mpicc"
     "-DCMAKE_C_FLAGS:STRING='-march=native -O3 -DNDEBUG'"
     "-DCMAKE_Fortran_COMPILER:STRING=/projects/albany/clang/bin/mpifort"

@@ -44,8 +44,7 @@ namespace WAFERLG {
     deltaTime_      (p.get<std::string>("Delta Time Name"),
 		     dl->workset_scalar),
     energyDot_      (p.get<std::string>("Energy Rate Name"),
-		     dl->qp_scalar),
-    hasConsolidation_ (p.get<bool>("Compute Consolidation"))
+		     dl->qp_scalar)
   {
         
     // dependent field
@@ -125,9 +124,6 @@ namespace WAFERLG {
     cond_list = p.get<Teuchos::ParameterList*>("Volumetric Heat Capacity Dense Parameter List");
     Cd = cond_list->get("Value",4.25e6);
 
-    cond_list = p.get<Teuchos::ParameterList*>("Porosity Parameter List");
-    Initial_porosity = cond_list->get("Value", 0.0);
-
 
     this->setName("Energy_Dot" + PHX::typeAsString<EvalT>());
 
@@ -197,64 +193,38 @@ namespace WAFERLG {
     ScalarT p;
     ScalarT g;
 
-    if (hasConsolidation_) {
 
-      for (std::size_t cell = 0; cell < workset.numCells; ++cell)
-	{
-	  for (std::size_t qp = 0; qp < num_qps_; ++qp)
-	    {
 
-	      // compute dT/dt using finite difference
-	      T_dot_(cell, qp) = (T_(cell, qp) - T_old(cell, qp)) / dt;
+    for (std::size_t cell = 0; cell < workset.numCells; ++cell)
+      {
+	for (std::size_t qp = 0; qp < num_qps_; ++qp)
+	  {
 
-	      phi1 = phi1_(cell, qp);
-	      dpdphi1 = 30.0 * phi1 * phi1 * (1.0 - 2.0 * phi1 + phi1 * phi1);
+	    // compute dT/dt using finite difference
+	    T_dot_(cell, qp) = (T_(cell, qp) - T_old(cell, qp)) / dt;
 
-	      phi1_dot_(cell,qp) = ( phi1_(cell,qp) - phi1_old(cell,qp) ) / dt;
-	      psi1_dot_(cell,qp) = ( psi1_(cell,qp) - psi1_old(cell,qp) ) / dt;
+	    phi1 = phi1_(cell, qp);
+	    dpdphi1 = 30.0 * phi1 * phi1 * (1.0 - 2.0 * phi1 + phi1 * phi1);
+	    phi2 = phi2_(cell, qp);
+	    dgdphi2 = 30.0 * phi2 * phi2 * (1.0 - 2.0 * phi2 + phi2 * phi2);
+
+	    phi1_dot_(cell,qp) = ( phi1_(cell,qp) - phi1_old(cell,qp) ) / dt;
+	    phi2_dot_(cell,qp) = ( phi2_(cell,qp) - phi2_old(cell,qp) ) / dt;
+
+	    Cs = rho_Cp_(cell, qp);
+
+	    p = phi1 * phi1 * phi1 * (10.0 - 15.0 * phi1 + 6.0 * phi1 * phi1);
+	    g = phi2 * phi2 * phi2 * (10.0 - 15.0 * phi2 + 6.0 * phi2 * phi2);
+
+	    energyDot_(cell, qp) = (Cs + p * (Cl_ - Cs)) * T_dot_(cell, qp) +
+	      dpdphi1 * (L_ + (Cl_ - Cs) * (T_(cell, qp) - Tm_)) * phi1_dot_(cell,qp) +
+	      dgdphi2 * (Lv_ + Cv_ * (T_(cell, qp) - Tv_)) * phi2_dot_(cell,qp) + g * Cv_ * T_dot_(cell, qp);
 		
-	      Cs = rho_Cp_(cell, qp);
-
-	      p = phi1 * phi1 * phi1 * (10.0 - 15.0 * phi1 + 6.0 * phi1 * phi1);
-              	      
-	      energyDot_(cell, qp) = (Cs + p * (Cl_ - Cs)) * T_dot_(cell, qp) +
-              	dpdphi1 * (L_ + (Cl_ - Cs) * (T_(cell, qp) - Tm_)) * phi1_dot_(cell,qp) -
-		(p*(T_(cell,qp) - Tm_) - T_(cell,qp))*Cd*Initial_porosity*psi1_dot_(cell,qp);
-
-	    }
-	}
-    } else {
-
-      for (std::size_t cell = 0; cell < workset.numCells; ++cell)
-	{
-	  for (std::size_t qp = 0; qp < num_qps_; ++qp)
-	    {
-
-	      // compute dT/dt using finite difference
-	      T_dot_(cell, qp) = (T_(cell, qp) - T_old(cell, qp)) / dt;
-
-	      phi1 = phi1_(cell, qp);
-	      dpdphi1 = 30.0 * phi1 * phi1 * (1.0 - 2.0 * phi1 + phi1 * phi1);
-	      phi2 = phi2_(cell, qp);
-	      dgdphi2 = 30.0 * phi2 * phi2 * (1.0 - 2.0 * phi2 + phi2 * phi2);
-
-	      phi1_dot_(cell,qp) = ( phi1_(cell,qp) - phi1_old(cell,qp) ) / dt;
-	      phi2_dot_(cell,qp) = ( phi2_(cell,qp) - phi2_old(cell,qp) ) / dt;
-
-	      Cs = rho_Cp_(cell, qp);
-
-	      p = phi1 * phi1 * phi1 * (10.0 - 15.0 * phi1 + 6.0 * phi1 * phi1);
-	      g = phi2 * phi2 * phi2 * (10.0 - 15.0 * phi2 + 6.0 * phi2 * phi2);
-
-	      energyDot_(cell, qp) = (Cs + p * (Cl_ - Cs)) * T_dot_(cell, qp) +
-              	dpdphi1 * (L_ + (Cl_ - Cs) * (T_(cell, qp) - Tm_)) * phi1_dot_(cell,qp) +
-		dgdphi2 * (Lv_ + Cv_ * (T_(cell, qp) - Tv_)) * phi2_dot_(cell,qp) + g * Cv_ * T_dot_(cell, qp);
-		
-	    }
-	}
+	  }
+      }
 
 
-    }
+    
   }
 
 

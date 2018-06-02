@@ -60,6 +60,7 @@
 
   <ParameterList name="Discretization">
     <Parameter name="Method"                                type="string"        value="Extruded"/>
+    <Parameter name="Workset Size"                          type="int"           value="10000"/>
     <Parameter name="Number Of Time Derivatives"            type="int"           value="0"/>
     <Parameter name="Cubature Degree"                       type="int"           value="3"/>
     <Parameter name="Exodus Output File Name"               type="string"        value="antarctica_muelu_out.exo"/>

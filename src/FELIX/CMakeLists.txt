@@ -19,7 +19,6 @@
        evaluators/FELIX_EnthalpyBasalResid.cpp
        evaluators/FELIX_EpsilonL1L2.cpp
        evaluators/FELIX_FlowRate.cpp
-       evaluators/FELIX_FlowFactorA.cpp
        evaluators/FELIX_FluxDiv.cpp
        evaluators/FELIX_GeoFluxHeat.cpp
        evaluators/FELIX_HydrologyBasalGravitationalWaterPotential.cpp
@@ -27,10 +26,13 @@
        evaluators/FELIX_HydrologyMeltingRate.cpp
        evaluators/FELIX_HydrologyResidualCavitiesEqn.cpp
        evaluators/FELIX_HydrologyResidualMassEqn.cpp
+       evaluators/FELIX_HydrologySurfaceWaterInput.cpp
        evaluators/FELIX_HydrologyWaterDischarge.cpp
-       evaluators/FELIX_HydrologyWaterSource.cpp
+       evaluators/FELIX_HydrologyWaterPressure.cpp
        evaluators/FELIX_HydrologyWaterThickness.cpp
        evaluators/FELIX_HydrostaticPressure.cpp
+       evaluators/FELIX_IceOverburden.cpp
+       evaluators/FELIX_IceSoftness.cpp
        evaluators/FELIX_Integral1Dw_Z.cpp
        evaluators/FELIX_LiquidWaterFraction.cpp
        evaluators/FELIX_PressureMeltingTemperature.cpp
@@ -84,7 +86,6 @@ IF (ALBANY_EPETRA)
        evaluators/FELIX_GatherVerticallyAveragedVelocity.cpp
        evaluators/FELIX_ScatterResidual2D.cpp
        problems/FELIX_StokesFOThickness.cpp
-       problems/FELIX_Hydrology.cpp
    )
 ENDIF()
 
@@ -128,8 +129,6 @@ ENDIF()
        evaluators/FELIX_EpsilonL1L2_Def.hpp
        evaluators/FELIX_FlowRate.hpp
        evaluators/FELIX_FlowRate_Def.hpp
-       evaluators/FELIX_FlowFactorA.hpp
-       evaluators/FELIX_FlowFactorA_Def.hpp
        evaluators/FELIX_FluxDiv.hpp
        evaluators/FELIX_FluxDiv_Def.hpp
        evaluators/FELIX_GeoFluxHeat.hpp
@@ -144,14 +143,20 @@ ENDIF()
        evaluators/FELIX_HydrologyResidualCavitiesEqn_Def.hpp
        evaluators/FELIX_HydrologyResidualMassEqn.hpp
        evaluators/FELIX_HydrologyResidualMassEqn_Def.hpp
+       evaluators/FELIX_HydrologySurfaceWaterInput.hpp
+       evaluators/FELIX_HydrologySurfaceWaterInput_Def.hpp
        evaluators/FELIX_HydrologyWaterDischarge.hpp
        evaluators/FELIX_HydrologyWaterDischarge_Def.hpp
-       evaluators/FELIX_HydrologyWaterSource.hpp
-       evaluators/FELIX_HydrologyWaterSource_Def.hpp
+       evaluators/FELIX_HydrologyWaterPressure.hpp
+       evaluators/FELIX_HydrologyWaterPressure_Def.hpp
        evaluators/FELIX_HydrologyWaterThickness.hpp
        evaluators/FELIX_HydrologyWaterThickness_Def.hpp
        evaluators/FELIX_HydrostaticPressure.hpp
        evaluators/FELIX_HydrostaticPressure_Def.hpp
+       evaluators/FELIX_IceOverburden.hpp
+       evaluators/FELIX_IceOverburden_Def.hpp
+       evaluators/FELIX_IceSoftness.hpp
+       evaluators/FELIX_IceSoftness_Def.hpp
        evaluators/FELIX_Integral1Dw_Z.hpp
        evaluators/FELIX_Integral1Dw_Z_Def.hpp
        evaluators/FELIX_LiquidWaterFraction.hpp
@@ -242,7 +247,6 @@ IF (ALBANY_EPETRA)
        evaluators/FELIX_StokesFOImplicitThicknessUpdateResid.hpp
        evaluators/FELIX_StokesFOImplicitThicknessUpdateResid_Def.hpp
        problems/FELIX_StokesFOThickness.hpp
-       problems/FELIX_Hydrology.hpp
   )
 ENDIF()
 

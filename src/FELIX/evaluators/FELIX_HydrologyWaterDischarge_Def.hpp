@@ -19,6 +19,19 @@ HydrologyWaterDischarge (const Teuchos::ParameterList& p,
   h       (p.get<std::string> ("Water Thickness Variable Name"), dl->qp_scalar),
   q       (p.get<std::string> ("Water Discharge Variable Name"), dl->qp_gradient)
 {
+  /*
+   *  The water discharge follows the following Darcy-like form
+   *
+   *     q = - k * h^alpha * |grad(Phi)|^(beta-2) * grad(Phi)
+   *
+   *  where q is the water discharge, h the water thickness, k a transmissivity constant,
+   *  phi is the hydraulic poential, and alpha/beta are two constants, with requirements
+   *  alpha>1, beta>1. The units of q follow from those of the mesh, h, k and Phi.
+   *  We assume h is in [m], Phi in [kPa], the mesh is in [km], and k has units
+   *     [k] =  m^(2*beta-alpha) s^(2*beta-3) kg^(1-beta).
+   *  Putting everything togeter, we get
+   *     [q] = mm/s
+   */
 
   if (IsStokes) {
     TEUCHOS_TEST_FOR_EXCEPTION (!dl->isSideLayouts, std::logic_error,
@@ -40,12 +53,23 @@ HydrologyWaterDischarge (const Teuchos::ParameterList& p,
 
   // Setting parameters
   Teuchos::ParameterList& hydrology = *p.get<Teuchos::ParameterList*>("FELIX Hydrology");
-  Teuchos::ParameterList& physics   = *p.get<Teuchos::ParameterList*>("FELIX Physical Parameters");
 
-  double rho_w = physics.get<double>("Water Density");
-  double g     = physics.get<double>("Gravity Acceleration");
-  k_0   = hydrology.get<double>("Transmissivity");
-  k_0 /= (rho_w * g);
+  k_0   = hydrology.get<double>("Darcy Law: Transmissivity");
+  alpha = hydrology.get<double>("Darcy Law: Water Thickness Exponent");
+  beta  = hydrology.get<double>("Darcy Law: Potential Gradient Norm Exponent");
+
+  TEUCHOS_TEST_FOR_EXCEPTION (beta<=1, Teuchos::Exceptions::InvalidParameter, "Error! 'Darcy Law: Potential Gradient Norm Exponent' must be larger than 1.0.\n");
+
+  if (beta==2.0) {
+    needsGradPhiNorm = false;
+  } else {
+    needsGradPhiNorm = true;
+  }
+
+  if (needsGradPhiNorm) {
+    gradPhiNorm = decltype(gradPhiNorm)(p.get<std::string>("Hydraulic Potential Gradient Norm Variable Name"), dl->qp_scalar);
+    this->addDependentField(gradPhiNorm);
+  }
 
   regularize = hydrology.get<bool>("Regularize With Continuation", false);
   if (regularize)
@@ -88,8 +112,7 @@ template<typename EvalT, typename Traits, bool IsStokes>
 void HydrologyWaterDischarge<EvalT, Traits, IsStokes>::evaluateFieldsCell (typename Traits::EvalData workset)
 {
   ScalarT regularization(0.0);
-  if (regularize)
-  {
+  if (regularize) {
     regularization = regularizationParam(0);
   }
   Teuchos::RCP<Teuchos::FancyOStream> output(Teuchos::VerboseObjectBase::getDefaultOStream());
@@ -99,19 +122,28 @@ void HydrologyWaterDischarge<EvalT, Traits, IsStokes>::evaluateFieldsCell (typen
   output->setOutputToRootOnly (0);
 
   static ScalarT printedReg = -1;
-  if (printedReg!=regularization)
-  {
-    *output << "reg = " << regularization << "\n";
+  if (printedReg!=regularization) {
+    *output << "[HydrologyWaterDischarge" << PHX::typeAsString<EvalT>() << "] reg = " << regularization << "\n";
     printedReg = regularization;
   }
 
-  for (int cell=0; cell < workset.numCells; ++cell)
-  {
-    for (int qp=0; qp < numQPs; ++qp)
-    {
-      for (int dim(0); dim<numDim; ++dim)
-      {
-        q(cell,qp,dim) = -k_0 * (std::pow(h(cell,qp),3)+regularization) * gradPhi(cell,qp,dim);
+  if (needsGradPhiNorm) {
+    double grad_norm_exponent = beta - 2.0;
+    for (int cell=0; cell < workset.numCells; ++cell) {
+      for (int qp=0; qp < numQPs; ++qp) {
+        for (int dim(0); dim<numDim; ++dim) {
+          q(cell,qp,dim) = -k_0 * (std::pow(h(cell,qp),alpha)+regularization)
+                                * std::pow(gradPhiNorm(cell,qp),grad_norm_exponent)
+                                * gradPhi(cell,qp,dim);
+        }
+      }
+    }
+  } else {
+    for (int cell=0; cell < workset.numCells; ++cell) {
+      for (int qp=0; qp < numQPs; ++qp) {
+        for (int dim(0); dim<numDim; ++dim) {
+          q(cell,qp,dim) = -k_0 * (std::pow(h(cell,qp),alpha)+regularization) * gradPhi(cell,qp,dim);
+        }
       }
     }
   }
@@ -121,12 +153,12 @@ template<typename EvalT, typename Traits, bool IsStokes>
 void HydrologyWaterDischarge<EvalT, Traits, IsStokes>::
 evaluateFieldsSide (typename Traits::EvalData workset)
 {
-  if (workset.sideSets->find(sideSetName)==workset.sideSets->end())
+  if (workset.sideSets->find(sideSetName)==workset.sideSets->end()) {
     return;
+  }
 
   ScalarT regularization(0.0);
-  if (regularize)
-  {
+  if (regularize) {
     regularization = regularizationParam(0);
   }
 
@@ -136,8 +168,7 @@ evaluateFieldsSide (typename Traits::EvalData workset)
   output->setProcRankAndSize (procRank, numProcs);
   output->setOutputToRootOnly (0);
   static ScalarT printedReg = -1;
-  if (printedReg!=regularization)
-  {
+  if (printedReg!=regularization) {
     *output << "[HydrologyWaterDischarge<" << PHX::typeAsString<EvalT>() << ">] reg = " << regularization << "\n";
     printedReg = regularization;
   }
@@ -149,11 +180,20 @@ evaluateFieldsSide (typename Traits::EvalData workset)
     const int cell = it_side.elem_LID;
     const int side = it_side.side_local_id;
 
-    for (int qp=0; qp < numQPs; ++qp)
-    {
-      for (int dim(0); dim<numDim; ++dim)
-      {
-        q(cell,side,qp,dim) = -k_0 * (std::pow(h(cell,side,qp),3)+regularization) * gradPhi(cell,side,qp,dim);
+    if (needsGradPhiNorm) {
+      double grad_norm_exponent = beta - 2.0;
+      for (int qp=0; qp < numQPs; ++qp) {
+        for (int dim(0); dim<numDim; ++dim) {
+          q(cell,side,qp,dim) = -k_0 * (std::pow(h(cell,side,qp),alpha)+regularization)
+                                     * std::pow(gradPhiNorm(cell,side,qp),grad_norm_exponent)
+                                     * gradPhi(cell,side,qp,dim);
+        }
+      }
+    } else {
+      for (int qp=0; qp < numQPs; ++qp) {
+        for (int dim(0); dim<numDim; ++dim) {
+          q(cell,side,qp,dim) = -k_0 * (std::pow(h(cell,side,qp),alpha)+regularization) * gradPhi(cell,side,qp,dim);
+        }
       }
     }
   }

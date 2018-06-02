@@ -22,16 +22,13 @@ HydrologyResidualMassEqn (const Teuchos::ParameterList& p,
   residual  (p.get<std::string> ("Mass Eqn Residual Name"),dl->node_scalar)
 {
   /*
-   *  The (hydraulic) potential equation has the following (strong) form
+   *  The mass conserbation equation has the following (strong) form
    *
-   *     -div(q) + A*h*N^3 + rho_w_inv*m = -omega + (h_r-h)*|u_b|/l_r
+   *     dh/dt + div(q) = m/rho_w + omega
    *
-   *  where q is the water discharge, h the water thickness, A the Glen's law
-   *  flow factor, N the effective pressure, rho_w_inv=1/rho_water-1/rho_ice,
-   *  m the melting rate of the ice (due to geothermal flow and sliding),
-   *  omega the water source (water reaching the bed from the surface, through
-   *  moulins), h_r/l_r typical height/length of bed bumps, and u_b is the
-   *  sliding velocity of the ice
+   *  where q is the water discharge, h the water thickness, rho_w is the water density,
+   *  m the melting rate of the ice (due to geothermal flow and sliding), and omega
+   *  is  the water source (water reaching the bed from the surface, through crevasses)
    */
 
   if (IsStokesCoupling)
@@ -64,10 +61,9 @@ HydrologyResidualMassEqn (const Teuchos::ParameterList& p,
   Teuchos::ParameterList& hydrology_params = *p.get<Teuchos::ParameterList*>("FELIX Hydrology Parameters");
   Teuchos::ParameterList& physical_params  = *p.get<Teuchos::ParameterList*>("FELIX Physical Parameters");
 
-  double rho_w      = physical_params.get<double>("Water Density", 1028.0);
-  bool melting_mass = hydrology_params.get<bool>("Use Melting In Conservation Of Mass", false);
+  rho_w       = physical_params.get<double>("Water Density", 1028.0);
+  use_melting = hydrology_params.get<bool>("Use Melting In Conservation Of Mass", false);
 
-  rho_w_inv = (melting_mass ? 1.0 : 0.0) / rho_w;
   unsteady = p.get<bool>("Unsteady");
   if (unsteady)
   {
@@ -75,25 +71,35 @@ HydrologyResidualMassEqn (const Teuchos::ParameterList& p,
     this->addDependentField(h_dot);
   }
 
-  mass_lumping = hydrology_params.isParameter("Mass Lumping") ? hydrology_params.get<bool>("Mass Lumping") : false;
-  penalization = hydrology_params.isParameter("Penalize Negative Potential") ? hydrology_params.get<bool>("Penalize Negative Potential") : false;
+  penalization_coeff = hydrology_params.isParameter("Water Pressure Bounds Penalization Coefficient")
+                     ? hydrology_params.get<double>("Water Pressure Bounds Penalization Coefficient") : 0.0;
+  TEUCHOS_TEST_FOR_EXCEPTION (penalization_coeff<0.0, Teuchos::Exceptions::InvalidParameter, "Error! Penalization coefficient must be positive.\n");
+  penalization = (penalization_coeff!=0.0);
+  if (penalization) {
+    P_w = PHX::MDField<const ScalarT>(p.get<std::string> ("Water Pressure Variable Name"), dl->node_scalar);
+    P_o = PHX::MDField<const ParamScalarT>(p.get<std::string>("Ice Overburden Variable Name"),dl->node_scalar);
+    this->addDependentField(P_w);
+    this->addDependentField(P_o);
+  }
+
   Teuchos::RCP<PHX::DataLayout> layout;
+  if (use_melting) {
+    mass_lumping = hydrology_params.isParameter("Mass Lumping") ? hydrology_params.get<bool>("Mass Lumping") : false;
+  } else {
+    mass_lumping = false;
+  }
+
   if (mass_lumping) {
     layout = dl->node_scalar;
   } else {
     layout = dl->qp_scalar;
   }
 
-  m = PHX::MDField<const ScalarT>(p.get<std::string> ("Melting Rate Variable Name"), layout);
-
-  if (penalization) {
-    phi = PHX::MDField<const ScalarT>(p.get<std::string> ("Hydraulic Potential Variable Name"), dl->node_scalar);
-    phi_0 = PHX::MDField<const ParamScalarT>(p.get<std::string>("Basal Gravitational Water Potential Variable Name"),dl->node_scalar);
-    this->addDependentField(phi);
-    this->addDependentField(phi_0);
+  if (use_melting) {
+    m = PHX::MDField<const ScalarT>(p.get<std::string> ("Melting Rate Variable Name"), layout);
+    this->addDependentField(m);
   }
 
-  this->addDependentField(m);
   this->addDependentField(BF);
   this->addDependentField(GradBF);
   this->addDependentField(w_measure);
@@ -102,29 +108,32 @@ HydrologyResidualMassEqn (const Teuchos::ParameterList& p,
 
   /*
    * Scalings, needed to account for different units: ice velocity
-   * is in m/yr, the mesh is in km, and hydrology time unit is s.
+   * is in m/yr, the mesh is in km, and hydrology space/time unit are m/s.
    *
-   * The residual has 5 terms (forget about signs), with the following
-   * units (including the km^2 from dx):
+   * The residual has 4 terms (here in strong form, without signs), with the following units:
    *
-   *  1) \int rho_w_inv*m*v*dx          [m km^2 yr^-1]
-   *  2) \int omega*v*dx                [mm km^2 day^-1]
-   *  3) \int dot(q*grad(v))*dx         [m^2 s^-1 km]
+   *  1) dh/dt            [m  s^-1  ]
+   *  2) div(q)           [mm s^-1  ]
+   *  3) m/rho_w          [m  yr^-1 ]
+   *  4) omega            [mm day^-1]
    *
-   * where q=k*h^3*gradPhi/(rho_w*g), and v is the test function (non-dimensional).
-   * We decide to uniform all terms to have units [m km^2 yr^-1].
+   * where q=k*h^alpha*|gradPhi|^(beta-2)*gradPhi.
+   * We decide to uniform all terms to have units [m yr^-1].
    * Where possible, we do this by rescaling some constants. Otherwise,
    * we simply introduce a new scaling factor
    *
-   *  1) rho_w_inv*m                    (no scaling)
-   *  2) scaling_omega*omega            scaling_omega = yr_to_day/1000
-   *  3) scaling_q*dot(q,grad(v))       scaling_q     = 1e-3*yr_to_s
+   *  1) dh/dt                  scaling_h_dot = yr_to_s
+   *  2) scaling_q*div(q)       scaling_q     = 1e-3*yr_to_s
+   *  3) m/rho_w                (no scaling)
+   *  4) scaling_omega*omega    scaling_omega = 1e-3*yr_to_d
    *
    * where yr_to_s=365.25*24*3600 (the number of seconds in a year)
-   * and   yr_to_day=365.25 (the number of days in a year)
+   * and   yr_to_d=365.25 (the number of days in a year)
    */
-  double yr_to_s  = 365.25*24*3600;
-  scaling_omega   = 365.25/1000;
+  double yr_to_d  = 365.25;
+  double yr_to_s  = yr_to_d*24*3600;
+  scaling_omega   = 1e-3*yr_to_d;
+  scaling_h_dot   = yr_to_s;
   scaling_q       = 1e-3*yr_to_s;
 
   this->setName("HydrologyResidualMassEqn"+PHX::typeAsString<EvalT>());
@@ -146,14 +155,16 @@ postRegistrationSetup(typename Traits::SetupData d,
     this->utils.setFieldData(metric,fm);
 
   if (penalization) {
-    this->utils.setFieldData(phi,fm);
-    this->utils.setFieldData(phi_0,fm);
+    this->utils.setFieldData(P_w,fm);
+    this->utils.setFieldData(P_o,fm);
   }
   if (unsteady) {
     this->utils.setFieldData(h_dot,fm);
   }
 
-  this->utils.setFieldData(m,fm);
+  if (use_melting) {
+    this->utils.setFieldData(m,fm);
+  }
 
   this->utils.setFieldData(residual,fm);
 }
@@ -193,10 +204,10 @@ evaluateFieldsSide (typename Traits::EvalData workset)
       res_node = 0;
       for (int qp=0; qp < numQPs; ++qp)
       {
-        res_qp = scaling_omega*omega(cell,side,qp) + (unsteady ? h_dot(cell,side,qp) : zero);
+        res_qp = scaling_omega*omega(cell,side,qp) - (unsteady ? scaling_h_dot*h_dot(cell,side,qp) : zero);
 
-        if (!mass_lumping) {
-          res_qp += rho_w_inv*m(cell,side,qp);
+        if (use_melting && !mass_lumping) {
+          res_qp += m(cell,side,qp)/rho_w;
         }
 
         res_qp *= BF(cell,side,node,qp);
@@ -212,14 +223,16 @@ evaluateFieldsSide (typename Traits::EvalData workset)
         res_node += res_qp * w_measure(cell,side,qp);
       }
 
-      if (mass_lumping) {
-        res_node += rho_w_inv*m(cell,side,node);
+      if (use_melting && mass_lumping) {
+        res_node += m(cell,side,node)/rho_w;
       }
 
       if (penalization) {
-        ScalarT over_shoot = phi(cell,side,node) - phi_0(cell,side,node);
-        res_node += std::pow(std::min(ScalarT(0.0),over_shoot),2);
+        res_node += penalization_coeff*std::pow(std::min(ScalarT(0.0),P_o(cell,side,node)-P_w(cell,side,node)),2);
+        res_node += penalization_coeff*std::pow(std::min(ScalarT(0.0),P_w(cell,side,node)),2);
       }
+
+
       residual (cell,side,node) = res_node;
     }
   }
@@ -237,10 +250,10 @@ evaluateFieldsCell (typename Traits::EvalData workset)
       res_node = 0;
       for (int qp=0; qp < numQPs; ++qp)
       {
-        res_qp = scaling_omega*omega(cell,qp) + (unsteady ? h_dot(cell,qp) : zero);
+        res_qp = scaling_omega*omega(cell,qp) - (unsteady ? scaling_h_dot*h_dot(cell,qp) : zero);
 
-        if (!mass_lumping) {
-          res_qp += rho_w_inv*m(cell,qp);
+        if (use_melting && !mass_lumping) {
+          res_qp += m(cell,qp)/rho_w;
         }
 
         res_qp *= BF(cell,node,qp);
@@ -253,14 +266,16 @@ evaluateFieldsCell (typename Traits::EvalData workset)
         res_node += res_qp * w_measure(cell,qp);
       }
 
-      if (mass_lumping) {
-        res_node += rho_w_inv*m(cell,node);
+      if (use_melting && mass_lumping) {
+        res_node += m(cell,node)/rho_w;
       }
 
       if (penalization) {
-        ScalarT over_shoot = phi(cell,node) - phi_0(cell,node);
-        res_node += std::pow(std::min(ScalarT(0.0),over_shoot),2);
+        res_node += penalization_coeff*std::min(ScalarT(0.0),P_o(cell,node)-P_w(cell,node));
+        res_node += penalization_coeff*std::min(ScalarT(0.0),P_w(cell,node));
       }
+
+
       residual (cell,node) = res_node;
     }
   }

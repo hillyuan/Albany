@@ -18,7 +18,7 @@ namespace FELIX
 
 /** \brief Hydrology ResidualMassEqn Evaluator
 
-    This evaluator evaluates the residual of the Hydrology model (quasi-static formulation)
+    This evaluator evaluates the residual of the mass conservation for the Hydrology model
 */
 
 template<typename EvalT, typename Traits, bool IsStokesCoupling, bool ThermoCoupled>
@@ -54,9 +54,9 @@ private:
   PHX::MDField<const ScalarT>       q;
   PHX::MDField<const ScalarT>       m;
   PHX::MDField<const ParamScalarT>  omega;
-  PHX::MDField<const ScalarT>       phi;
-  PHX::MDField<const ParamScalarT>  phi_0;
   PHX::MDField<const ScalarT>       h_dot;
+  PHX::MDField<const ScalarT>       P_w;  // Water pressure (for penalization)
+  PHX::MDField<const ParamScalarT>  P_o;  // Overburden (for penalization)
 
   // Input only needed if equation is on a sideset
   PHX::MDField<const MeshScalarT,Cell,Side,QuadPoint,Dim,Dim>   metric;
@@ -68,12 +68,15 @@ private:
   int numQPs;
   int numDims;
 
-  double rho_w_inv;
+  double rho_w;
   double scaling_omega;
   double scaling_q;
+  double scaling_h_dot;
+  double penalization_coeff;
 
   bool mass_lumping;
   bool penalization;
+  bool use_melting;
   bool unsteady;
 
   // Variables necessary for stokes coupling

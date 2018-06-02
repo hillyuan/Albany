@@ -51,11 +51,12 @@ private:
   PHX::MDField<const RealType>      BF;
   PHX::MDField<const MeshScalarT>   w_measure;
   PHX::MDField<const ScalarT>       h;
+  PHX::MDField<const ScalarT>       h_node;
   PHX::MDField<const ScalarT>       h_dot;
   PHX::MDField<const ScalarT>       N;
   PHX::MDField<const ScalarT>       m;
   PHX::MDField<const IceScalarT>    u_b;
-  PHX::MDField<const TempScalarT>   flowFactorA;
+  PHX::MDField<const TempScalarT>   ice_softness;
 
   // Output:
   PHX::MDField<ScalarT>             residual;
@@ -63,15 +64,17 @@ private:
   int numNodes;
   int numQPs;
 
-  double use_eff_cav;
-  double rho_i_inv;
+  double rho_i;
   double h_r;
   double l_r;
+  double c_creep;
   double scaling_h_t;
-  double scaling_A;
+  double penalization_coeff;
 
   bool unsteady;
+  bool use_melting;
   bool nodal_equation;
+  bool penalization;
 
   // Variables necessary for stokes coupling
   bool                            stokes_coupling;
