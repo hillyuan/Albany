@@ -4,8 +4,8 @@
 //    in the file "license.txt" in the top-level Albany directory  //
 //*****************************************************************//
 
-#ifndef FELIX_HYDROLOGY_BASAL_GRAVITATIONAL_WATER_POTENTIAL_HPP
-#define FELIX_HYDROLOGY_BASAL_GRAVITATIONAL_WATER_POTENTIAL_HPP 1
+#ifndef FELIX_HYDRAULIC_POTENTIAL_HPP
+#define FELIX_HYDRAULIC_POTENTIAL_HPP 1
 
 #include "Phalanx_config.hpp"
 #include "Phalanx_Evaluator_WithBaseImpl.hpp"
@@ -16,22 +16,22 @@
 namespace FELIX
 {
 
-/** \brief Hydrology Basal Potential
+/** \brief Ice overburden
 
     This evaluator evaluates the basal potential phi = \rho_w * g * z_b at the basal side
 */
 
 template<typename EvalT, typename Traits, bool IsStokes>
-class BasalGravitationalWaterPotential : public PHX::EvaluatorWithBaseImpl<Traits>,
-                                         public PHX::EvaluatorDerived<EvalT, Traits>
+class HydraulicPotential : public PHX::EvaluatorWithBaseImpl<Traits>,
+                           public PHX::EvaluatorDerived<EvalT, Traits>
 {
 public:
 
   typedef typename EvalT::ScalarT      ScalarT;
   typedef typename EvalT::ParamScalarT ParamScalarT;
 
-  BasalGravitationalWaterPotential (const Teuchos::ParameterList& p,
-                  const Teuchos::RCP<Albany::Layouts>& dl);
+  HydraulicPotential (const Teuchos::ParameterList& p,
+                       const Teuchos::RCP<Albany::Layouts>& dl);
 
   void postRegistrationSetup (typename Traits::SetupData d,
                               PHX::FieldManager<Traits>& fm);
@@ -44,15 +44,18 @@ private:
   void evaluateFieldsSide(typename Traits::EvalData d);
 
   // Input:
-  PHX::MDField<const ParamScalarT>  H;
-  PHX::MDField<const ParamScalarT>  z_s;
+  PHX::MDField<const ScalarT>       P_w;
+  PHX::MDField<const ParamScalarT>  phi_0;
+  PHX::MDField<const ScalarT>       h;
 
   // Output:
-  PHX::MDField<ParamScalarT>  phi_0;
+  PHX::MDField<ScalarT>         phi;
 
-  std::string basalSideName;
+  std::string basalSideName;  // Only if IsStokes  is true
 
-  int numNodes;
+  int numPts;
+
+  bool use_h;
 
   double rho_w;
   double g;
@@ -60,4 +63,4 @@ private:
 
 } // Namespace FELIX
 
-#endif // FELIX_HYDROLOGY_BASAL_GRAVITATIONAL_WATER_POTENTIAL_HPP
+#endif // FELIX_HYDRAULIC_POTENTIAL_HPP

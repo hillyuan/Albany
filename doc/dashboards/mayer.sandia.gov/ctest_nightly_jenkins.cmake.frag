@@ -54,13 +54,6 @@ set (BOOST_PATH $ENV{BOOST_ROOT})
 set (BLAS_PATH $ENV{OPENBLAS_ROOT}) 
 set (LAPACK_PATH $ENV{OPENBLAS_ROOT}) 
 set (ZLIB_PATH $ENV{ZLIB_ROOT})  
-#set (HDF5_PATH /home/projects/arm64-tx2/hdf5/1.10.1/openmpi/2.1.2/gcc/7.2.0)
-#set (NETCDF_PATH /home/projects/arm64-tx2/netcdf-exo/4.4.1.1/openmpi/2.1.2/gcc/7.2.0) 
-#set (PNETCDF_PATH /home/projects/arm64-tx2/pnetcdf-exo/1.8.1/openmpi/2.1.2/gcc/7.2.0) 
-#set (BOOST_PATH /home/projects/arm64-tx2/boost/1.66.0/gcc/7.2.0) 
-#set (BLAS_PATH /home/projects/arm64-tx2/openblas/0.2.20/gcc/7.2.0) 
-#set (LAPACK_PATH /home/projects/arm64-tx2/openblas/0.2.20/gcc/7.2.0) 
-#set (ZLIB_PATH /home/projects/arm64/zlib/1.2.11)  
 
 if (CLEAN_BUILD)
   # Initial cache info
@@ -427,7 +420,7 @@ if (BUILD_ALBANY)
   set_property (GLOBAL PROPERTY Label IKTMayerARMAlbany)
   
   set (CONFIGURE_OPTIONS
-    "-DALBANY_TRILINOS_DIR:FILEPATH=/home/projects/albany/nightlyCDashTrilinos/build/TrilinosInstall"
+    "-DALBANY_TRILINOS_DIR:FILEPATH=$ENV{jenkins_trilinos_install_dir}"
     "-DENABLE_LCM:BOOL=ON"
     "-DENABLE_MOR:BOOL=ON"
     "-DENABLE_GOAL:BOOL=OFF"

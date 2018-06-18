@@ -195,7 +195,8 @@ BasalFrictionCoefficient (const Teuchos::ParameterList& p,
 
   logParameters = beta_list.get<bool>("Use log scalar parameters",false);
 
-  if (p.isType<bool>("Enable Memoizer")) memoizer.enable_memoizer(p.get<bool>("Enable Memoizer"));
+  if (p.isType<bool>("Enable Memoizer") && p.get<bool>("Enable Memoizer"))
+    memoizer.enable_memoizer();
 
   this->setName("BasalFrictionCoefficient"+PHX::typeAsString<EvalT>());
 }
@@ -256,18 +257,18 @@ evaluateFields (typename Traits::EvalData workset)
   {
     if (logParameters)
     {
-      mu = std::exp(Albany::convertScalar<ScalarT,ParamScalarT>(muParam(0)));
-      power = std::exp(Albany::convertScalar<ScalarT,ParamScalarT>(powerParam(0)));
+      mu = std::exp(Albany::convertScalar<const ParamScalarT>(muParam(0)));
+      power = std::exp(Albany::convertScalar<const ParamScalarT>(powerParam(0)));
 
       if (!distributedLambda)
-        lambda = std::exp(Albany::convertScalar<ScalarT,ParamScalarT>(lambdaParam(0)));
+        lambda = std::exp(Albany::convertScalar<const ParamScalarT>(lambdaParam(0)));
     }
     else
     {
-      mu = Albany::convertScalar<ScalarT,ParamScalarT>(muParam(0));
-      power = Albany::convertScalar<ScalarT,ParamScalarT>(powerParam(0));
+      mu = Albany::convertScalar<const ParamScalarT>(muParam(0));
+      power = Albany::convertScalar<const ParamScalarT>(powerParam(0));
       if (!distributedLambda)
-        lambda = Albany::convertScalar<ScalarT,ParamScalarT>(lambdaParam(0));
+        lambda = Albany::convertScalar<const ParamScalarT>(lambdaParam(0));
     }
 #ifdef OUTPUT_TO_SCREEN
     Teuchos::RCP<Teuchos::FancyOStream> output(Teuchos::VerboseObjectBase::getDefaultOStream());
@@ -306,12 +307,12 @@ evaluateFields (typename Traits::EvalData workset)
     if (logParameters)
     {
       if (!distributedLambda)
-        lambda = std::exp(Albany::convertScalar<ScalarT,ParamScalarT>(lambdaParam(0)));
+        lambda = std::exp(Albany::convertScalar<const ParamScalarT>(lambdaParam(0)));
     }
     else
     {
       if (!distributedLambda)
-        lambda = Albany::convertScalar<ScalarT,ParamScalarT>(lambdaParam(0));
+        lambda = Albany::convertScalar<const ParamScalarT>(lambdaParam(0));
     }
 #ifdef OUTPUT_TO_SCREEN
     Teuchos::RCP<Teuchos::FancyOStream> output(Teuchos::VerboseObjectBase::getDefaultOStream());
