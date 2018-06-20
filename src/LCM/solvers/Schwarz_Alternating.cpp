@@ -1432,7 +1432,9 @@ SchwarzLoopQuasistatics() const
   // Output initial configuration.
   doQuasistaticOutput(current_time);
 
-  // Continuation loop
+  // Continuation loop. We do continuation manually for Schwarz instead
+  // using LOCA. It turned out to be too complicated to use LOCA to sync
+  // continuation between different subdomains.
   while (stop < maximum_steps_ && current_time < final_time_) {
 
     ST const
@@ -1445,13 +1447,40 @@ SchwarzLoopQuasistatics() const
     fos << "Time step          :" << time_step << '\n';
     fos << delim << std::endl;
 
+    // This object is necessary to be able to set an initial solution
+    // for the model evaluator to a desired value. This is used to save
+    // previous values of the solution at each Schwarz iteration for
+    // each subdomain.
+    Thyra::ModelEvaluatorBase::InArgsSetup<ST> nv;
+    nv.setModelEvalDescription(this->description());
+    nv.setSupports(Thyra::ModelEvaluatorBase::IN_ARG_x, true);
+
     // Before the Schwarz loop, save the solutions for each subdomain in case
     // the solve fails. Then the load step is reduced and the Schwarz
     // loop is restarted from scratch.
     for (auto subdomain = 0; subdomain < num_subdomains_; ++subdomain) {
 
-      prev_step_disp_[subdomain] = stop == 0 ?
-          Teuchos::null : curr_disp_[subdomain];
+      // Set these initial values explicitly to zero so that no
+      // extra logic is necessary for initial values in the
+      // Schwarz and subdomain loops.
+      if (stop == 0) {
+        auto &
+        me = dynamic_cast<Albany::ModelEvaluatorT &>
+        (*model_evaluators_[subdomain]);
+
+        auto
+        zero_disp_rcp = Thyra::createMember(me.get_x_space());
+
+        auto
+        zero_disp_ptr = zero_disp_rcp.ptr();
+
+        Thyra::put_scalar<ST>(0.0, zero_disp_ptr);
+
+        prev_step_disp_[subdomain] = zero_disp_rcp;
+        curr_disp_[subdomain] = zero_disp_rcp;
+      } else {
+        prev_step_disp_[subdomain] = curr_disp_[subdomain];
+      }
 
       auto &
       app = *apps_[subdomain];
@@ -1459,24 +1488,14 @@ SchwarzLoopQuasistatics() const
       auto &
       state_mgr = app.getStateMgr();
 
-#ifdef DEBUG
-      fos << "DEBUG: Initial internal states subdomain " << subdomain << '\n';
-#endif
       toFrom(internal_states_[subdomain], state_mgr.getStateArrays());
-#ifdef DEBUG
-      printInternalElementStates(
-          internal_states_[subdomain], state_mgr.getStateInfoStruct());
-      fos << "DEBUG: Initial internal states subdomain " << subdomain << '\n';
-#endif
+
     }
 
     num_iter_ = 0;
 
     // Schwarz loop
     do {
-
-      bool const
-      is_initial_state = stop == 0 && num_iter_ == 0;
 
       // Subdomain loop
       for (auto subdomain = 0; subdomain < num_subdomains_; ++subdomain) {
@@ -1495,9 +1514,7 @@ SchwarzLoopQuasistatics() const
         (*model_evaluators_[subdomain]);
 
         auto
-        prev_disp_rcp = is_initial_state == true ?
-            me.getNominalValues().get_x() :
-            curr_disp_[subdomain];
+        prev_disp_rcp = curr_disp_[subdomain];
 
         auto const &
         prev_disp = *prev_disp_rcp;
@@ -1509,21 +1526,14 @@ SchwarzLoopQuasistatics() const
         auto &
         state_mgr = app.getStateMgr();
 
-#ifdef DEBUG
-        fos << "DEBUG: SETTING internal states subdomain " << subdomain << '\n';
-        printInternalElementStates(
-            internal_states_[subdomain], state_mgr.getStateInfoStruct());
-        fos << "DEBUG: SETTING ..." << '\n';
-#endif 
         toFrom(state_mgr.getStateArrays(), internal_states_[subdomain]);
 
         // Restore solution from previous time step
         auto
-        prev_step_disp_rcp = is_initial_state == true ?
-            me.getNominalValues().get_x() :
-            prev_step_disp_[subdomain];
+        prev_step_disp_rcp = prev_step_disp_[subdomain];
 
-        me.getNominalValues().set_x(prev_step_disp_rcp);
+        nv.set_x(prev_step_disp_rcp);
+        me.setNominalValues(nv);
 
         // Target time
         me.setCurrentTime(next_time);
@@ -1590,22 +1600,6 @@ SchwarzLoopQuasistatics() const
         norms_final(subdomain) = Thyra::norm(curr_disp);
         norms_diff(subdomain) = Thyra::norm(disp_diff);
 
-#if defined(DEBUG)
-        fos << "\n*** NOX: Previous solution ***\n";
-        prev_disp.describe(fos, Teuchos::VERB_EXTREME);
-        fos << "\n*** NORM: " << Thyra::norm(prev_disp) << '\n';
-        fos << "\n*** NOX: Previous solution ***\n";
-
-        fos << "\n*** NOX: Current solution ***\n";
-        curr_disp.describe(fos, Teuchos::VERB_EXTREME);
-        fos << "\n*** NORM: " << Thyra::norm(curr_disp) << '\n';
-        fos << "\n*** NOX: Current solution ***\n";
-
-        fos << "\n*** NOX: Solution difference ***\n";
-        disp_diff.describe(fos, Teuchos::VERB_EXTREME);
-        fos << "\n*** NORM: " << Thyra::norm(disp_diff) << '\n';
-        fos << "\n*** NOX: Solution difference ***\n";
-#endif //DEBUG
       } // Subdomain loop
 
       if (failed_ == true) {
@@ -1664,7 +1658,7 @@ SchwarzLoopQuasistatics() const
 
     }  while (continueSolve() == true); // Schwarz loop
 
-    // One of the subdomains failed to solve. Reduce step.
+    // One or more of the subdomains failed to solve. Reduce step.
     if (failed_ == true) {
       failed_ = false;
 
