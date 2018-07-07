@@ -287,6 +287,7 @@ SET(SOURCES ${SOURCES}
   evaluators/bc/PHAL_DirichletOffNodeSet.cpp
   evaluators/bc/PHAL_IdentityCoordinateFunctionTraits.cpp
   evaluators/bc/PHAL_Neumann.cpp
+  evaluators/bc/PHAL_BodySource.cpp
   evaluators/gather/PHAL_GatherAuxData.cpp
   evaluators/gather/PHAL_GatherCoordinateVector.cpp
   evaluators/gather/PHAL_GatherScalarNodalParameter.cpp
@@ -406,6 +407,8 @@ SET(HEADERS ${HEADERS}
   evaluators/bc/PHAL_IdentityCoordinateFunctionTraits_Def.hpp
   evaluators/bc/PHAL_Neumann.hpp
   evaluators/bc/PHAL_Neumann_Def.hpp
+  evaluators/bc/PHAL_BodySource.hpp
+  evaluators/bc/PHAL_BodySource_Def.hpp
   evaluators/gather/PHAL_GatherAuxData.hpp
   evaluators/gather/PHAL_GatherAuxData_Def.hpp
   evaluators/gather/PHAL_GatherCoordinateVector.hpp
