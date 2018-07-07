@@ -29,58 +29,90 @@ namespace PHAL {
 
 */
 
+template <typename EvalT, typename Traits>
+class BodySourceBase : 
+    public PHX::EvaluatorWithBaseImpl<Traits>,
+    public PHX::EvaluatorDerived<EvalT, Traits> {
+ public:
+  using ScalarT = typename EvalT::ScalarT;
+  using MeshScalarT = typename EvalT::MeshScalarT;
+
+  BodySourceBase(Teuchos::ParameterList & p, Teuchos::RCP<Albany::Layouts> dl);
+
+  void postRegistrationSetup(typename Traits::SetupData d,
+      PHX::FieldManager<Traits> & vm) {};
+
+  void evaluateFields(typename Traits::EvalData d) {};
+  
+ public:
+  int num_qp_{0};
+  int num_dim_{0};
+};
+
 //
 // Body force evaluator
 //
 template <typename EvalT, typename Traits>
-class BodySource : public PHX::EvaluatorWithBaseImpl<Traits>,
-                  public PHX::EvaluatorDerived<EvalT, Traits> {
+class BodySource : public BodySourceBase<EvalT, Traits> {
  public:
   using ScalarT = typename EvalT::ScalarT;
   using MeshScalarT = typename EvalT::MeshScalarT;
 
   BodySource(Teuchos::ParameterList & p, Teuchos::RCP<Albany::Layouts> dl);
 
-  void
-  postRegistrationSetup(
+  void postRegistrationSetup(
       typename Traits::SetupData d,
       PHX::FieldManager<Traits> & vm);
 
-  void
-  evaluateFields(typename Traits::EvalData d);
+  void evaluateFields(typename Traits::EvalData d);
 
  private:
-  int
-  num_qp_{0};
-
-  int
-  num_dim_{0};
-
-  PHX::MDField<const MeshScalarT, Cell, QuadPoint, Dim>
-  coordinates_;
-
-  PHX::MDField<const MeshScalarT, Cell, QuadPoint> weights_;
-  // PHX::MDField<const ScalarT, Cell> density_;
-  const RealType density_;
-
-  PHX::MDField<ScalarT, Cell, QuadPoint, Dim>
-  body_force_;
-
-  bool
-  is_constant_{true};
-
-  Teuchos::Array<RealType>
-  constant_value_;
-
-  Teuchos::Array<RealType>
-  rotation_center_;
-
-  Teuchos::Array<RealType>
-  rotation_axis_;
-
-  RealType 
-  angular_frequency_;
+  std::vector< BodySourceBase<EvalT, Traits>* > m_sources_;
 };
+
+template <typename EvalT, typename Traits>
+class Gravity : public BodySourceBase<EvalT, Traits> {
+ public:
+  using ScalarT = typename EvalT::ScalarT;
+  using MeshScalarT = typename EvalT::MeshScalarT;
+
+  Gravity(Teuchos::ParameterList & p, Teuchos::RCP<Albany::Layouts> dl);
+
+  void postRegistrationSetup(
+      typename Traits::SetupData d,
+      PHX::FieldManager<Traits> & vm) {};
+
+  void evaluateFields(typename Traits::EvalData d) {};
+
+ private:
+  RealType  m_acc_;
+  Teuchos::Array<RealType> m_direction_; 
+  
+};
+
+//
+// Body force evaluator
+//
+template <typename EvalT, typename Traits>
+class Centripetal : public BodySourceBase<EvalT, Traits> {
+ public:
+  using ScalarT = typename EvalT::ScalarT;
+  using MeshScalarT = typename EvalT::MeshScalarT;
+
+  Centripetal(Teuchos::ParameterList & p, Teuchos::RCP<Albany::Layouts> dl);
+
+  void postRegistrationSetup(
+      typename Traits::SetupData d,
+      PHX::FieldManager<Traits> & vm) {};
+
+  void evaluateFields(typename Traits::EvalData d) {};
+
+ private:
+  Teuchos::Array<RealType> rotation_center_;
+  Teuchos::Array<RealType> rotation_axis_;
+  RealType angular_frequency_;
+};
+
 
 }
 #endif

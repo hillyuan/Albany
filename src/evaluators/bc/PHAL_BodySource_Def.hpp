@@ -18,59 +18,45 @@
 
 namespace PHAL {
 template <typename EvalT, typename Traits>
-BodyForce<EvalT, Traits>::
-BodyForce(Teuchos::ParameterList & p, Teuchos::RCP<Albany::Layouts> dl)
-    : body_force_("Body Force", dl->qp_vector),
+BodySourceBase<EvalT, Traits>::
+BodySourceBase(Teuchos::ParameterList & p, Teuchos::RCP<Albany::Layouts> dl)
+{
+	Teuchos::RCP<PHX::DataLayout> vector_dl = dl->qp_vector;
+    std::vector<PHX::DataLayout::size_type> dims;
+    vector_dl->dimensions(dims);
+    num_qp_ = dims[1];
+    num_dim_ = dims[2];
+}
+	
+template <typename EvalT, typename Traits>
+BodySource<EvalT, Traits>::
+BodySource(Teuchos::ParameterList & p, Teuchos::RCP<Albany::Layouts> dl)
+: BodySourceBase<EvalT, Traits>(p, dl)
+ /*   : body_force_("Body Force", dl->qp_vector),
       density_(p.get<RealType>("Density")),
       weights_("Weights", dl->qp_scalar),
-      coordinates_("Coord Vec", dl->qp_vector)
+      coordinates_("Coord Vec", dl->qp_vector)*/
 {
-  Teuchos::RCP<PHX::DataLayout>
-  vector_dl = dl->qp_vector;
-
-  std::vector<PHX::DataLayout::size_type>
-  dims;
-
-  vector_dl->dimensions(dims);
-
-  num_qp_ = dims[1];
-  num_dim_ = dims[2];
-
   std::string const &
-  type = p.get("Body Force Type", "Constant");
+  type = p.get("Type", "Gravity");
 
-  if (type == "Constant") {
-    is_constant_ = true;
-    constant_value_ = p.get<Teuchos::Array<RealType>>("Value");
+  if (type == "Gravity") {
+    Gravity<EvalT, Traits>  *q = new Gravity<EvalT, Traits>(p,dl);
+	m_sources_.push_back( q );
   } else if (type == "Centripetal") {
-    is_constant_ = false;
-    rotation_center_ = p.get<Teuchos::Array<RealType>>("Rotation Center",
-        Teuchos::tuple<double>(0.0, 0.0, 0.0));
-    rotation_axis_ = p.get<Teuchos::Array<RealType>>("Rotation Axis",
-        Teuchos::tuple<double>(0.0, 0.0, 0.0));
-    angular_frequency_ = p.get<RealType>("Angular Frequency", 0.0);
-
-    // Ensure that axisDirection is normalized
-    double len = 0.0;
-    for (int i = 0; i < 3; i++){
-      len += this->rotation_axis_[i] * this->rotation_axis_[i];
-    }
-
-    len = sqrt(len);
-    for (int i = 0; i < 3; i++){
-      this->rotation_axis_[i] /= len;
-    }
+    Centripetal<EvalT, Traits>  *q = new Centripetal<EvalT, Traits>(p,dl);
+	m_sources_.push_back( q );
   }
   else {
     TEUCHOS_TEST_FOR_EXCEPTION(
         true, Teuchos::Exceptions::InvalidParameter,
         "Invalid body force type " << type);
   }
-
+/*
   this->addDependentField(coordinates_);
   this->addDependentField(weights_);
   this->addEvaluatedField(body_force_);
-  this->setName("Body Force" + PHX::typeAsString<EvalT>());
+  this->setName("Body Force" + PHX::typeAsString<EvalT>());*/
 }
 
 //
@@ -78,13 +64,13 @@ BodyForce(Teuchos::ParameterList & p, Teuchos::RCP<Albany::Layouts> dl)
 //
 template <typename EvalT, typename Traits>
 void
-BodyForce<EvalT, Traits>::
+BodySource<EvalT, Traits>::
 postRegistrationSetup(
     typename Traits::SetupData d, PHX::FieldManager<Traits> & fm)
 {
-  this->utils.setFieldData(body_force_, fm);
+ /* this->utils.setFieldData(body_force_, fm);
   if (is_constant_ == false) this->utils.setFieldData(coordinates_, fm);
-  if (is_constant_ == false) this->utils.setFieldData(weights_, fm);
+  if (is_constant_ == false) this->utils.setFieldData(weights_, fm);*/
 }
 
 //
@@ -92,12 +78,12 @@ postRegistrationSetup(
 //
 template<typename EvalT, typename Traits>
 void
-BodyForce<EvalT, Traits>::
+BodySource<EvalT, Traits>::
 evaluateFields(typename Traits::EvalData workset)
 {
   int const
   num_cells = workset.numCells;
-
+/*
   if (is_constant_ == true) {
     for (int cell = 0; cell < num_cells; ++cell) {
       for (int qp = 0; qp < num_qp_; ++qp) {
@@ -151,7 +137,41 @@ evaluateFields(typename Traits::EvalData workset)
 
       }
     }
-  }
+  }*/
 }
+
+template <typename EvalT, typename Traits>
+Gravity<EvalT, Traits>::
+Gravity(Teuchos::ParameterList & p, Teuchos::RCP<Albany::Layouts> dl)
+: BodySourceBase<EvalT, Traits>(p, dl)
+{
+  m_acc_ = p.get<RealType>("Acceleration");
+  m_direction_ = p.get<Teuchos::Array<RealType>>("Direction",
+        Teuchos::tuple<double>(1.0, 0.0, 0.0));
+}
+
+template <typename EvalT, typename Traits>
+Centripetal<EvalT, Traits>::
+Centripetal(Teuchos::ParameterList & p, Teuchos::RCP<Albany::Layouts> dl)
+: BodySourceBase<EvalT, Traits>(p, dl)
+{
+    rotation_center_ = p.get<Teuchos::Array<RealType>>("Rotation Center",
+        Teuchos::tuple<double>(0.0, 0.0, 0.0));
+    rotation_axis_ = p.get<Teuchos::Array<RealType>>("Rotation Axis",
+        Teuchos::tuple<double>(0.0, 0.0, 0.0));
+    angular_frequency_ = p.get<RealType>("Angular Frequency", 0.0);
+	
+	 // Ensure that axisDirection is normalized
+    double len = 0.0;
+    for (int i = 0; i < 3; i++){
+      len += this->rotation_axis_[i] * this->rotation_axis_[i];
+    }
+
+    len = sqrt(len);
+    for (int i = 0; i < 3; i++){
+      this->rotation_axis_[i] /= len;
+    }
+}
+
 
 }
