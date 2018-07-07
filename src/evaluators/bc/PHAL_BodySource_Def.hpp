@@ -18,20 +18,22 @@
 
 namespace PHAL {
 template <typename EvalT, typename Traits>
-BodySourceBase<EvalT, Traits>::
-BodySourceBase(Teuchos::ParameterList & p, Teuchos::RCP<Albany::Layouts> dl)
+BodySourceBase<EvalT, Traits> :: BodySourceBase(Teuchos::ParameterList & p) :
+  dl             (p.get<Teuchos::RCP<Albany::Layouts> >("Layouts Struct")),
+  meshSpecs      (p.get<Teuchos::RCP<Albany::MeshSpecsStruct> >("Mesh Specs Struct"))
 {
-	Teuchos::RCP<PHX::DataLayout> vector_dl = dl->qp_vector;
-    std::vector<PHX::DataLayout::size_type> dims;
-    vector_dl->dimensions(dims);
-    num_qp_ = dims[1];
-    num_dim_ = dims[2];
+	//Teuchos::RCP<PHX::DataLayout> vector_dl = dl->qp_vector;
+    std::vector<PHX::DataLayout::size_type> dim;
+    dl->qp_tensor->dimensions(dim);
+    numCells = dim[0];
+    numQPs = dim[1];
+    cellDims = dim[2];
 }
 	
 template <typename EvalT, typename Traits>
 BodySource<EvalT, Traits>::
-BodySource(Teuchos::ParameterList & p, Teuchos::RCP<Albany::Layouts> dl)
-: BodySourceBase<EvalT, Traits>(p, dl)
+BodySource(Teuchos::ParameterList & p)
+: BodySourceBase<EvalT, Traits>(p)
  /*   : body_force_("Body Force", dl->qp_vector),
       density_(p.get<RealType>("Density")),
       weights_("Weights", dl->qp_scalar),
@@ -41,10 +43,10 @@ BodySource(Teuchos::ParameterList & p, Teuchos::RCP<Albany::Layouts> dl)
   type = p.get("Type", "Gravity");
 
   if (type == "Gravity") {
-    Gravity<EvalT, Traits>  *q = new Gravity<EvalT, Traits>(p,dl);
+    Gravity<EvalT, Traits>  *q = new Gravity<EvalT, Traits>(p);
 	m_sources_.push_back( q );
   } else if (type == "Centripetal") {
-    Centripetal<EvalT, Traits>  *q = new Centripetal<EvalT, Traits>(p,dl);
+    Centripetal<EvalT, Traits>  *q = new Centripetal<EvalT, Traits>(p);
 	m_sources_.push_back( q );
   }
   else {
@@ -52,8 +54,16 @@ BodySource(Teuchos::ParameterList & p, Teuchos::RCP<Albany::Layouts> dl)
         true, Teuchos::Exceptions::InvalidParameter,
         "Invalid body force type " << type);
   }
+  
+  PHX::MDField<const ScalarT,Cell,Node,VecDim> dofVec = decltype(dofVec)(
+           p.get<std::string>("DOF Name"),
+           p.get<Teuchos::RCP<PHX::DataLayout> >("DOF Data Layout"));
+//  int const num_cells = workset.numCells;
+//  m_outsource_ = Kokkos::createDynRankViewWithType<Kokkos::DynRankView<ScalarT, PHX::Device> >
+//         (dofVec.get_view(), "DDN", numCells, numNodes, numDOFsSet);
+  
 /*
-  this->addDependentField(coordinates_);
+  
   this->addDependentField(weights_);
   this->addEvaluatedField(body_force_);
   this->setName("Body Force" + PHX::typeAsString<EvalT>());*/
@@ -81,8 +91,7 @@ void
 BodySource<EvalT, Traits>::
 evaluateFields(typename Traits::EvalData workset)
 {
-  int const
-  num_cells = workset.numCells;
+  int const num_cells = workset.numCells;
 /*
   if (is_constant_ == true) {
     for (int cell = 0; cell < num_cells; ++cell) {
@@ -141,19 +150,26 @@ evaluateFields(typename Traits::EvalData workset)
 }
 
 template <typename EvalT, typename Traits>
-Gravity<EvalT, Traits>::
-Gravity(Teuchos::ParameterList & p, Teuchos::RCP<Albany::Layouts> dl)
-: BodySourceBase<EvalT, Traits>(p, dl)
+Gravity<EvalT, Traits> :: Gravity(Teuchos::ParameterList & p)
+: BodySourceBase<EvalT, Traits>(p)
 {
   m_acc_ = p.get<RealType>("Acceleration");
   m_direction_ = p.get<Teuchos::Array<RealType>>("Direction",
         Teuchos::tuple<double>(1.0, 0.0, 0.0));
 }
 
+template<typename EvalT, typename Traits>
+void Gravity<EvalT, Traits>::
+evaluateFields(typename Traits::EvalData workset)
+{
+  int const num_cells = workset.numCells;
+  std::cout << this->numQPs ;
+}
+
 template <typename EvalT, typename Traits>
 Centripetal<EvalT, Traits>::
-Centripetal(Teuchos::ParameterList & p, Teuchos::RCP<Albany::Layouts> dl)
-: BodySourceBase<EvalT, Traits>(p, dl)
+Centripetal(Teuchos::ParameterList & p)
+: BodySourceBase<EvalT, Traits>(p)
 {
     rotation_center_ = p.get<Teuchos::Array<RealType>>("Rotation Center",
         Teuchos::tuple<double>(0.0, 0.0, 0.0));
@@ -171,6 +187,9 @@ Centripetal(Teuchos::ParameterList & p, Teuchos::RCP<Albany::Layouts> dl)
     for (int i = 0; i < 3; i++){
       this->rotation_axis_[i] /= len;
     }
+	
+	coordinates_ = PHX::MDField<const MeshScalarT, Cell, QuadPoint, Dim>("Coord Vec", this->dl->qp_vector);
+	this->addDependentField(coordinates_);
 }
 
 

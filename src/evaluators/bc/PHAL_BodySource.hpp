@@ -33,20 +33,24 @@ template <typename EvalT, typename Traits>
 class BodySourceBase : 
     public PHX::EvaluatorWithBaseImpl<Traits>,
     public PHX::EvaluatorDerived<EvalT, Traits> {
- public:
+public:
   using ScalarT = typename EvalT::ScalarT;
   using MeshScalarT = typename EvalT::MeshScalarT;
 
-  BodySourceBase(Teuchos::ParameterList & p, Teuchos::RCP<Albany::Layouts> dl);
+  BodySourceBase(Teuchos::ParameterList & p);
 
   void postRegistrationSetup(typename Traits::SetupData d,
       PHX::FieldManager<Traits> & vm) {};
 
   void evaluateFields(typename Traits::EvalData d) {};
   
- public:
-  int num_qp_{0};
-  int num_dim_{0};
+protected:
+  const Teuchos::RCP<Albany::Layouts>& dl;
+  const Teuchos::RCP<Albany::MeshSpecsStruct>& meshSpecs;
+ 
+  int  cellDims,  numQPs, numNodes, numCells, maxSideDim, maxNumQpSide;
+  Teuchos::Array<int> offset;
+  int numDOFsSet;
 };
 
 //
@@ -58,13 +62,16 @@ class BodySource : public BodySourceBase<EvalT, Traits> {
   using ScalarT = typename EvalT::ScalarT;
   using MeshScalarT = typename EvalT::MeshScalarT;
 
-  BodySource(Teuchos::ParameterList & p, Teuchos::RCP<Albany::Layouts> dl);
+  BodySource(Teuchos::ParameterList & p);
 
   void postRegistrationSetup(
       typename Traits::SetupData d,
       PHX::FieldManager<Traits> & vm);
 
   void evaluateFields(typename Traits::EvalData d);
+  
+   // Output:
+  Kokkos::DynRankView<ScalarT, PHX::Device> m_outsource_;
 
  private:
   std::vector< BodySourceBase<EvalT, Traits>* > m_sources_;
@@ -76,13 +83,13 @@ class Gravity : public BodySourceBase<EvalT, Traits> {
   using ScalarT = typename EvalT::ScalarT;
   using MeshScalarT = typename EvalT::MeshScalarT;
 
-  Gravity(Teuchos::ParameterList & p, Teuchos::RCP<Albany::Layouts> dl);
+  Gravity(Teuchos::ParameterList & p);
 
   void postRegistrationSetup(
       typename Traits::SetupData d,
       PHX::FieldManager<Traits> & vm) {};
 
-  void evaluateFields(typename Traits::EvalData d) {};
+  void evaluateFields(typename Traits::EvalData d);
 
  private:
   RealType  m_acc_;
@@ -99,7 +106,7 @@ class Centripetal : public BodySourceBase<EvalT, Traits> {
   using ScalarT = typename EvalT::ScalarT;
   using MeshScalarT = typename EvalT::MeshScalarT;
 
-  Centripetal(Teuchos::ParameterList & p, Teuchos::RCP<Albany::Layouts> dl);
+  Centripetal(Teuchos::ParameterList & p);
 
   void postRegistrationSetup(
       typename Traits::SetupData d,
@@ -111,6 +118,8 @@ class Centripetal : public BodySourceBase<EvalT, Traits> {
   Teuchos::Array<RealType> rotation_center_;
   Teuchos::Array<RealType> rotation_axis_;
   RealType angular_frequency_;
+  
+  PHX::MDField<const MeshScalarT, Cell, QuadPoint, Dim> coordinates_;
 };
 
 

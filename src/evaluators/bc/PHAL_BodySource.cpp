@@ -9,7 +9,7 @@
 #include "PHAL_BodySource.hpp"
 #include "PHAL_BodySource_Def.hpp"
 
-//PHAL_INSTANTIATE_TEMPLATE_CLASS(PHAL::BodySourceBase)
+PHAL_INSTANTIATE_TEMPLATE_CLASS(PHAL::BodySourceBase)
 PHAL_INSTANTIATE_TEMPLATE_CLASS(PHAL::BodySource)
 //PHAL_INSTANTIATE_TEMPLATE_CLASS(PHAL::BodySourceAggregator)
 
