@@ -29,277 +29,58 @@ namespace PHAL {
 
 */
 
+//
+// Body force evaluator
+//
+template <typename EvalT, typename Traits>
+class BodySource : public PHX::EvaluatorWithBaseImpl<Traits>,
+                  public PHX::EvaluatorDerived<EvalT, Traits> {
+ public:
+  using ScalarT = typename EvalT::ScalarT;
+  using MeshScalarT = typename EvalT::MeshScalarT;
 
-template<typename EvalT, typename Traits>
-class BodySourceBase : 
-    public PHX::EvaluatorWithBaseImpl<Traits>,
-    public PHX::EvaluatorDerived<EvalT, Traits>,
-    public Sacado::ParameterAccessor<EvalT, SPL_Traits> {
+  BodySource(Teuchos::ParameterList & p, Teuchos::RCP<Albany::Layouts> dl);
 
-public:
+  void
+  postRegistrationSetup(
+      typename Traits::SetupData d,
+      PHX::FieldManager<Traits> & vm);
 
-  enum NEU_TYPE {COORD, NORMAL, INTJUMP, PRESS, ROBIN, TRACTION, CLOSED_FORM, STEFAN_BOLTZMANN};
+  void
+  evaluateFields(typename Traits::EvalData d);
 
-  typedef typename EvalT::ScalarT ScalarT;
-  typedef typename EvalT::MeshScalarT MeshScalarT;
-  typedef typename EvalT::ParamScalarT ParamScalarT;
+ private:
+  int
+  num_qp_{0};
 
-  BodySourceBase(const Teuchos::ParameterList& p);
+  int
+  num_dim_{0};
 
-  void postRegistrationSetup(typename Traits::SetupData d,
-                      PHX::FieldManager<Traits>& vm);
+  PHX::MDField<const MeshScalarT, Cell, QuadPoint, Dim>
+  coordinates_;
 
-  void evaluateFields(typename Traits::EvalData d) = 0;
+  PHX::MDField<const MeshScalarT, Cell, QuadPoint> weights_;
+  // PHX::MDField<const ScalarT, Cell> density_;
+  const RealType density_;
 
-  ScalarT& getValue(const std::string &n);
+  PHX::MDField<ScalarT, Cell, QuadPoint, Dim>
+  body_force_;
 
-protected:
+  bool
+  is_constant_{true};
 
-  const Teuchos::RCP<Albany::Layouts>& dl;
-  const Teuchos::RCP<Albany::MeshSpecsStruct>& meshSpecs;
+  Teuchos::Array<RealType>
+  constant_value_;
 
-  int  cellDims,  numQPs, numNodes, numCells, maxSideDim, maxNumQpSide;
-  Teuchos::Array<int> offset;
-  int numDOFsSet;
+  Teuchos::Array<RealType>
+  rotation_center_;
 
- // Should only specify flux vector components (dudx, dudy, dudz), dudn, or pressure P
+  Teuchos::Array<RealType>
+  rotation_axis_;
 
-   // dudn scaled
-  void calc_dudn_const(Kokkos::DynRankView<ScalarT, PHX::Device> & qp_data_returned,
-                          const Kokkos::DynRankView<MeshScalarT, PHX::Device>& phys_side_cub_points,
-                          const Kokkos::DynRankView<MeshScalarT, PHX::Device>& jacobian_side_refcell,
-                          const shards::CellTopology & celltopo,
-                          const int cellDims,
-                          int local_side_id,
-                          ScalarT scale = 1.0);
-
-  // robin (also uses flux scaling)
-  void calc_dudn_robin (Kokkos::DynRankView<ScalarT, PHX::Device> & qp_data_returned,
-                        const Kokkos::DynRankView<MeshScalarT, PHX::Device>& phys_side_cub_points,
-                        const Kokkos::DynRankView<ScalarT, PHX::Device>& dof_side,
-                        const Kokkos::DynRankView<MeshScalarT, PHX::Device>& jacobian_side_refcell,
-                        const shards::CellTopology & celltopo,
-                        const int cellDims,
-                        int local_side_id,
-                        ScalarT scale,
-                        const ScalarT* robin_param_values);
-						
-  // Stefan-Boltzmann (also uses flux scaling)
-  void calc_dudn_radiate (Kokkos::DynRankView<ScalarT, PHX::Device> & qp_data_returned,
-                        const Kokkos::DynRankView<MeshScalarT, PHX::Device>& phys_side_cub_points,
-                        const Kokkos::DynRankView<ScalarT, PHX::Device>& dof_side,
-                        const Kokkos::DynRankView<MeshScalarT, PHX::Device>& jacobian_side_refcell,
-                        const shards::CellTopology & celltopo,
-                        const int cellDims,
-                        int local_side_id,
-                        ScalarT scale,
-                        const ScalarT* robin_param_values);
-
-   // (dudx, dudy, dudz)
-  void calc_gradu_dotn_const(Kokkos::DynRankView<ScalarT, PHX::Device> & qp_data_returned,
-                          const Kokkos::DynRankView<MeshScalarT, PHX::Device>& phys_side_cub_points,
-                          const Kokkos::DynRankView<MeshScalarT, PHX::Device>& jacobian_side_refcell,
-                          const shards::CellTopology & celltopo,
-                          const int cellDims,
-                          int local_side_id);
-
-   // (t_x, t_y, t_z)
-  void calc_traction_components(Kokkos::DynRankView<ScalarT, PHX::Device> & qp_data_returned,
-                          const Kokkos::DynRankView<MeshScalarT, PHX::Device>& phys_side_cub_points,
-                          const Kokkos::DynRankView<MeshScalarT, PHX::Device>& jacobian_side_refcell,
-                          const shards::CellTopology & celltopo,
-                          const int cellDims,
-                          int local_side_id);
-
-   // Pressure P
-  void calc_press(Kokkos::DynRankView<ScalarT, PHX::Device> & qp_data_returned,
-                          const Kokkos::DynRankView<MeshScalarT, PHX::Device>& phys_side_cub_points,
-                          const Kokkos::DynRankView<MeshScalarT, PHX::Device>& jacobian_side_refcell,
-                          const shards::CellTopology & celltopo,
-                          const int cellDims,
-                          int local_side_id);
-
-  // closed_from bc assignment
-  void calc_closed_form(Kokkos::DynRankView<ScalarT, PHX::Device> &    qp_data_returned,
-                        const Kokkos::DynRankView<MeshScalarT, PHX::Device>& physPointsSide,
-                        const Kokkos::DynRankView<MeshScalarT, PHX::Device>& jacobian_side_refcell,
-                        const shards::CellTopology & celltopo,
-                        const int cellDims,
-                        int local_side_id,
-                        typename Traits::EvalData workset);
-
-
-   // Do the side integration
-  void evaluateBodySourceContribution(typename Traits::EvalData d);
-
-  // Input:
-  //! Coordinate vector at vertices
-  PHX::MDField<const MeshScalarT,Cell,Vertex,Dim> coordVec;
-  PHX::MDField<const ScalarT,Cell,Node> dof;
-  PHX::MDField<const ScalarT,Cell,Node,VecDim> dofVec;
-  Teuchos::RCP<shards::CellTopology> cellType;
-  Teuchos::ArrayRCP<Teuchos::RCP<shards::CellTopology> > sideType;
-  Teuchos::RCP<Intrepid2::Cubature<PHX::Device> > cubatureCell;
-  Teuchos::ArrayRCP<Teuchos::RCP<Intrepid2::Cubature<PHX::Device> > > cubatureSide;
-
-  // The basis
-  Teuchos::RCP<Intrepid2::Basis<PHX::Device, RealType, RealType> > intrepidBasis;
-
-  // Temporary Views
-  Kokkos::DynRankView<MeshScalarT, PHX::Device> physPointsCell_buffer;
-
-  Kokkos::DynRankView<ScalarT, PHX::Device> dofCell_buffer;
-  
-  Kokkos::DynRankView<RealType, PHX::Device> cubPointsSide_buffer;
-  Kokkos::DynRankView<RealType, PHX::Device> refPointsSide_buffer;
-  Kokkos::DynRankView<RealType, PHX::Device> cubWeightsSide_buffer;
-  Kokkos::DynRankView<RealType, PHX::Device> basis_refPointsSide_buffer;
-
-  Kokkos::DynRankView<MeshScalarT, PHX::Device> physPointsSide_buffer;
-  Kokkos::DynRankView<MeshScalarT, PHX::Device> jacobianSide_buffer;
-  Kokkos::DynRankView<MeshScalarT, PHX::Device> jacobianSide_det_buffer;
-  Kokkos::DynRankView<MeshScalarT, PHX::Device> weighted_measure_buffer;
-  Kokkos::DynRankView<MeshScalarT, PHX::Device> trans_basis_refPointsSide_buffer;
-  Kokkos::DynRankView<MeshScalarT, PHX::Device> weighted_trans_basis_refPointsSide_buffer;
-  Kokkos::DynRankView<MeshScalarT, PHX::Device> side_normals_buffer;
-  Kokkos::DynRankView<MeshScalarT, PHX::Device> normal_lengths_buffer;
-  
-  Kokkos::DynRankView<ScalarT, PHX::Device> dofSide_buffer;
-  Kokkos::DynRankView<ScalarT, PHX::Device> dofSideVec_buffer;
-
-  Kokkos::DynRankView<MeshScalarT, PHX::Device> temporary_buffer;
-  Kokkos::DynRankView<ScalarT, PHX::Device> data_buffer;  
-
-  Kokkos::DynRankView<ScalarT, PHX::Device> data;
-
-  // Output:
-  Kokkos::DynRankView<ScalarT, PHX::Device> neumann;
-
-  int numSidesOnElem;
-
-  std::string sideSetID;
-  Teuchos::Array<RealType> inputValues;
-  std::string inputConditions;
-  std::string name;
-
-  NEU_TYPE bc_type;
-  ScalarT const_val;
-  ScalarT robin_vals[5]; // (dof_value, coeff multiplying difference (dof - dof_value), jump)
-  std::vector<ScalarT> dudx;
-
-  std::vector<ScalarT> matScaling;
-
-  MDFieldMemoizer<Traits> memoizer;
-};
-
-template<typename EvalT, typename Traits> class BodySource;
-
-// **************************************************************
-// **************************************************************
-// * Specializations
-// **************************************************************
-// **************************************************************
-
-
-// **************************************************************
-// Residual 
-// **************************************************************
-template<typename Traits>
-class BodySource<PHAL::AlbanyTraits::Residual,Traits>
-  : public BodySourceBase<PHAL::AlbanyTraits::Residual, Traits>  {
-public:
-  BodySource(Teuchos::ParameterList& p);
-  void evaluateFields(typename Traits::EvalData d);
-private:
-  typedef typename PHAL::AlbanyTraits::Residual::ScalarT ScalarT;
-};
-
-// **************************************************************
-// Jacobian
-// **************************************************************
-template<typename Traits>
-class BodySource<PHAL::AlbanyTraits::Jacobian,Traits>
-  : public BodySourceBase<PHAL::AlbanyTraits::Jacobian, Traits>  {
-public:
-  BodySource(Teuchos::ParameterList& p);
-  void evaluateFields(typename Traits::EvalData d);
-private:
-  typedef typename PHAL::AlbanyTraits::Jacobian::ScalarT ScalarT;
-
-#ifdef ALBANY_KOKKOS_UNDER_DEVELOPMENT
-public:
-
- Teuchos::RCP<Tpetra_Vector> fT;
- Teuchos::ArrayRCP<ST> fT_nonconstView;
- Teuchos::RCP<Tpetra_CrsMatrix> JacT;
-
- typedef typename Tpetra_CrsMatrix::local_matrix_type  LocalMatrixType;
- LocalMatrixType jacobian;
- Kokkos::View<int***, PHX::Device> Index;
- bool is_adjoint;
-
- typedef Kokkos::View<int***, PHX::Device>::execution_space ExecutionSpace;
-
- struct BodySource_Tag{};
- typedef Kokkos::RangePolicy<ExecutionSpace, BodySource_Tag> BodySource_Policy;
-
- KOKKOS_INLINE_FUNCTION
-  void operator() (const BodySource_Tag& tag, const int& i) const;
-
-#endif
-
-};
-
-// **************************************************************
-// Tangent
-// **************************************************************
-template<typename Traits>
-class BodySource<PHAL::AlbanyTraits::Tangent,Traits>
-  : public BodySourceBase<PHAL::AlbanyTraits::Tangent, Traits>  {
-public:
-  BodySource(Teuchos::ParameterList& p);
-  void evaluateFields(typename Traits::EvalData d);
-private:
-  typedef typename PHAL::AlbanyTraits::Tangent::ScalarT ScalarT;
-};
-
-// **************************************************************
-// Distributed Parameter Derivative
-// **************************************************************
-template<typename Traits>
-class BodySource<PHAL::AlbanyTraits::DistParamDeriv,Traits>
-  : public BodySourceBase<PHAL::AlbanyTraits::DistParamDeriv, Traits>  {
-public:
-  BodySource(Teuchos::ParameterList& p);
-  void evaluateFields(typename Traits::EvalData d);
-private:
-  typedef typename PHAL::AlbanyTraits::DistParamDeriv::ScalarT ScalarT;
-};
-
-// **************************************************************
-// **************************************************************
-// Evaluator to aggregate all BodySource BCs into one "field"
-// **************************************************************
-template<typename EvalT, typename Traits>
-class BodySourceAggregator
-  : public PHX::EvaluatorWithBaseImpl<Traits>,
-    public PHX::EvaluatorDerived<EvalT, Traits>
-{
-private:
-
-  typedef typename EvalT::ScalarT ScalarT;
-
-public:
-  
-  BodySourceAggregator(const Teuchos::ParameterList& p);
-  
-  void postRegistrationSetup(typename Traits::SetupData d,
-                             PHX::FieldManager<Traits>& vm) {};
-  
-  void evaluateFields(typename Traits::EvalData d) {};
-
+  RealType 
+  angular_frequency_;
 };
 
 }
-
 #endif
