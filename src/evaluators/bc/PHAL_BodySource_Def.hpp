@@ -192,28 +192,6 @@ BodySourceBase(const Teuchos::ParameterList& p) :
   numSidesOnElem = elem_top->side_count;
   sideType.resize(numSidesOnElem);
   cubatureSide.resize(numSidesOnElem);
-  side_type.resize(numSidesOnElem);
-
-  // Build containers that depend on side topology
-  const char* sideTypeName;
-
-  maxSideDim = maxNumQpSide =0;
-  for(int i=0; i<numSidesOnElem; ++i) {
-    sideType[i] = Teuchos::rcp(new shards::CellTopology(elem_top->side[i].topology));
-    cubatureSide[i] = cubFactory.create<PHX::Device, RealType, RealType>(*sideType[i], cubatureDegree);
-    maxSideDim = std::max( maxSideDim, (int)sideType[i]->getDimension());
-    maxNumQpSide = std::max(maxNumQpSide, (int)cubatureSide[i]->getNumPoints());
-    sideTypeName = sideType[i]->getName();
-    if(strncasecmp(sideTypeName, "Line", 4) == 0)
-      side_type[i] = LINE;
-    else if(strncasecmp(sideTypeName, "Tri", 3) == 0)
-      side_type[i] = TRI;
-    else if(strncasecmp(sideTypeName, "Quad", 4) == 0)
-      side_type[i] = QUAD;
-    else
-      TEUCHOS_TEST_FOR_EXCEPTION(true, std::logic_error,
-        "PHAL_BodySource: side type : " << sideTypeName << " is not supported." << std::endl);
-  }
 
   numNodes = intrepidBasis->getCardinality();
 
@@ -240,36 +218,7 @@ postRegistrationSetup(typename Traits::SetupData d,
     this->utils.setFieldData(dof,fm);
     dofSide_buffer = Kokkos::createDynRankView(dof.get_view(), "dofSide", numCells*maxNumQpSide);
   }
-#ifdef ALBANY_FELIX
-  else if (inputConditions == "basal" || inputConditions == "basal_scalar_field")
-  {
-    this->utils.setFieldData(dofVec,fm);
-    this->utils.setFieldData(beta_field,fm);
-    if (inputConditions == "basal") {
-      this->utils.setFieldData(thickness_field,fm);
-      this->utils.setFieldData(bedTopo_field,fm);
-    }
-    betaOnSide_buffer      = Kokkos::createDynRankView(dofVec.get_view(), "betaOnSide", numCells*maxNumQpSide);
-    betaOnCell      = Kokkos::createDynRankView(dofVec.get_view(), "betaOnCell", numCells, numNodes);
-    thicknessOnCell = Kokkos::createDynRankView(dofVec.get_view(), "thicknessOnCell", numCells, numNodes);
-    bedTopoOnCell   = Kokkos::createDynRankView(dofVec.get_view(), "bedTopoOnCell", numCells, numNodes);
-    betaOnSide_buffer      = Kokkos::createDynRankView(dofVec.get_view(), "betaOnSide", numCells*maxNumQpSide);
-    thicknessOnSide_buffer = Kokkos::createDynRankView(dofVec.get_view(), "thicknessOnSide", numCells*maxNumQpSide);
-    bedTopoOnSide_buffer   = Kokkos::createDynRankView(dofVec.get_view(), "bedTopoOnSide", numCells*maxNumQpSide);
-    dofSideVec_buffer      = Kokkos::createDynRankView(dofVec.get_view(), "dofSideVec", numCells*maxNumQpSide*numDOFsSet);
-  }
-  else if(inputConditions == "lateral")
-  {
-    this->utils.setFieldData(dofVec,fm);
-    this->utils.setFieldData(thickness_field,fm);
-    this->utils.setFieldData(elevation_field,fm);
-    thicknessOnCell = Kokkos::createDynRankView(dofVec.get_view(), "thicknessOnCell", numCells, numNodes);
-    elevationOnCell = Kokkos::createDynRankView(dofVec.get_view(), "elevationOnCell", numCells, numNodes);
-    thicknessOnSide_buffer = Kokkos::createDynRankView(dofVec.get_view(), "thicknessOnSide", numCells*maxNumQpSide);
-    elevationOnSide_buffer = Kokkos::createDynRankView(dofVec.get_view(), "elevationOnSide",numCells*maxNumQpSide);
-    dofSideVec_buffer      = Kokkos::createDynRankView(dofVec.get_view(), "dofSideVec", numCells*maxNumQpSide*numDOFsSet);
-  }
-#endif
+
   // Note, we do not need to add dependent field to fm here for output - that is done
   // by BodySource Aggregator
 
@@ -293,9 +242,6 @@ postRegistrationSetup(typename Traits::SetupData d,
 
   if (inputConditions == "robin" || inputConditions == "radiate") {
     dofCell_buffer = Kokkos::createDynRankView(dof.get_view(), "dofCell", numCells, numNodes);
-  }
-  else if (inputConditions == "basal" || inputConditions == "basal_scalar_field" || inputConditions == "lateral") {
-    dofCellVec_buffer = Kokkos::createDynRankView(dofVec.get_view(), "dofCellVec", numCells, numNodes, numDOFsSet);
   }
 }
 
@@ -344,24 +290,6 @@ evaluateBodySourceContribution(typename Traits::EvalData workset)
     case PRESS:
        neumann = Kokkos::createDynRankViewWithType<Kokkos::DynRankView<ScalarT, PHX::Device> >
          (coordVec.get_view(), "DDN", numCells, numNodes, numDOFsSet);
-       break;
-    case BASAL:
-#ifdef ALBANY_FELIX
-       neumann = Kokkos::createDynRankViewWithType<Kokkos::DynRankView<ScalarT, PHX::Device> >
-         (dofVec.get_view(), "DDN", numCells, numNodes, numDOFsSet);
-#endif
-       break;
-    case BASAL_SCALAR_FIELD:
-#ifdef ALBANY_FELIX
-       neumann = Kokkos::createDynRankViewWithType<Kokkos::DynRankView<ScalarT, PHX::Device> >
-         (dofVec.get_view(), "DDN", numCells, numNodes, numDOFsSet);
-#endif
-       break;
-    case LATERAL:
-#ifdef ALBANY_FELIX
-       neumann = Kokkos::createDynRankViewWithType<Kokkos::DynRankView<ScalarT, PHX::Device> >
-         (dofVec.get_view(), "DDN", numCells, numNodes, numDOFsSet);
-#endif
        break;
     case TRACTION:
        neumann = Kokkos::createDynRankViewWithType<Kokkos::DynRankView<ScalarT, PHX::Device> >

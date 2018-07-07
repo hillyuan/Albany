@@ -38,8 +38,7 @@ class BodySourceBase :
 
 public:
 
-  enum NEU_TYPE {COORD, NORMAL, INTJUMP, PRESS, ROBIN, BASAL, BASAL_SCALAR_FIELD, TRACTION, LATERAL, CLOSED_FORM, STEFAN_BOLTZMANN};
-  enum SIDE_TYPE {OTHER, LINE, TRI, QUAD}; // to calculate areas for pressure bc
+  enum NEU_TYPE {COORD, NORMAL, INTJUMP, PRESS, ROBIN, TRACTION, CLOSED_FORM, STEFAN_BOLTZMANN};
 
   typedef typename EvalT::ScalarT ScalarT;
   typedef typename EvalT::MeshScalarT MeshScalarT;
@@ -138,11 +137,6 @@ protected:
   PHX::MDField<const MeshScalarT,Cell,Vertex,Dim> coordVec;
   PHX::MDField<const ScalarT,Cell,Node> dof;
   PHX::MDField<const ScalarT,Cell,Node,VecDim> dofVec;
-  PHX::MDField<const ParamScalarT,Cell,Node> beta_field;
-  PHX::MDField<const ParamScalarT,Cell,Node> roughness_field;
-  PHX::MDField<const ParamScalarT,Cell,Node> thickness_field;
-  PHX::MDField<const ParamScalarT,Cell,Node> elevation_field;
-  PHX::MDField<const ParamScalarT,Cell,Node> bedTopo_field;
   Teuchos::RCP<shards::CellTopology> cellType;
   Teuchos::ArrayRCP<Teuchos::RCP<shards::CellTopology> > sideType;
   Teuchos::RCP<Intrepid2::Cubature<PHX::Device> > cubatureCell;
@@ -155,8 +149,6 @@ protected:
   Kokkos::DynRankView<MeshScalarT, PHX::Device> physPointsCell_buffer;
 
   Kokkos::DynRankView<ScalarT, PHX::Device> dofCell_buffer;
-  Kokkos::DynRankView<ScalarT, PHX::Device> dofCellVec_buffer;
-  
   
   Kokkos::DynRankView<RealType, PHX::Device> cubPointsSide_buffer;
   Kokkos::DynRankView<RealType, PHX::Device> refPointsSide_buffer;
@@ -172,17 +164,9 @@ protected:
   Kokkos::DynRankView<MeshScalarT, PHX::Device> side_normals_buffer;
   Kokkos::DynRankView<MeshScalarT, PHX::Device> normal_lengths_buffer;
   
-  Kokkos::DynRankView<ScalarT, PHX::Device> betaOnSide_buffer;
-  Kokkos::DynRankView<ScalarT, PHX::Device> thicknessOnSide_buffer;
-  Kokkos::DynRankView<ScalarT, PHX::Device> bedTopoOnSide_buffer;
-  Kokkos::DynRankView<ScalarT, PHX::Device> elevationOnSide_buffer;
   Kokkos::DynRankView<ScalarT, PHX::Device> dofSide_buffer;
   Kokkos::DynRankView<ScalarT, PHX::Device> dofSideVec_buffer;
-  Kokkos::DynRankView<ScalarT, PHX::Device> betaOnCell;
-  Kokkos::DynRankView<ScalarT, PHX::Device> thicknessOnCell;
-  Kokkos::DynRankView<ScalarT, PHX::Device> elevationOnCell;
-  Kokkos::DynRankView<ScalarT, PHX::Device> bedTopoOnCell;
-  
+
   Kokkos::DynRankView<MeshScalarT, PHX::Device> temporary_buffer;
   Kokkos::DynRankView<ScalarT, PHX::Device> data_buffer;  
 
@@ -199,7 +183,6 @@ protected:
   std::string name;
 
   NEU_TYPE bc_type;
-  Teuchos::Array<SIDE_TYPE> side_type;
   ScalarT const_val;
   ScalarT robin_vals[5]; // (dof_value, coeff multiplying difference (dof - dof_value), jump)
   std::vector<ScalarT> dudx;
