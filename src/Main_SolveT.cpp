@@ -16,7 +16,7 @@
 
 #include "Teuchos_FancyOStream.hpp"
 #include "Teuchos_GlobalMPISession.hpp"
-#include "Teuchos_StackedTimer.hpp"
+//#include "Teuchos_StackedTimer.hpp"
 #include "Teuchos_StandardCatchMacros.hpp"
 #include "Teuchos_TimeMonitor.hpp"
 #include "Teuchos_VerboseObject.hpp"
