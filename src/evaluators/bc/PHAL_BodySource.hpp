@@ -63,21 +63,6 @@ protected:
   Teuchos::Array<int> offset;
   int numDOFsSet;
 
-  //The following are for the basal BC 
-  std::string betaName; //name of function betaXY to be used
-  double L;           //length scale for ISMIP-HOM Test cases 
-  MeshScalarT betaXY; //function of x and y to multiply scalar values of beta read from input file
-  enum BETAXY_NAME {CONSTANT, EXPTRIG, ISMIP_HOM_TEST_C, ISMIP_HOM_TEST_D, CONFINEDSHELF, CIRCULARSHELF, DOMEUQ, SCALAR_FIELD, EXP_SCALAR_FIELD, POWERLAW_SCALAR_FIELD, EXP_SCALAR_FIELD_THK, LATERAL_BACKPRESSURE, FELIX_XZ_MMS};
-  BETAXY_NAME beta_type;
- 
-  //The following are for the lateral BC 
-  double g; 
-  double rho; 
-  double rho_w;
-  bool useGLP;
-  Teuchos::ParameterList* stereographicMapList;
-  bool useStereographicMap;
-
  // Should only specify flux vector components (dudx, dudy, dudz), dudn, or pressure P
 
    // dudn scaled
@@ -144,37 +129,6 @@ protected:
                         int local_side_id,
                         typename Traits::EvalData workset);
 
-  //Basal bc
-  void calc_dudn_basal(Kokkos::DynRankView<ScalarT, PHX::Device> & qp_data_returned,
-                       const Kokkos::DynRankView<MeshScalarT, PHX::Device>& physPointsSide,
-   		       const Kokkos::DynRankView<ScalarT, PHX::Device>& basalFriction_side,
-   		       const Kokkos::DynRankView<ScalarT, PHX::Device>& thickness_side,
-   		      const Kokkos::DynRankView<ScalarT, PHX::Device>& bedTopo_side,
-   		       const Kokkos::DynRankView<ScalarT, PHX::Device>& dof_side,
-                       const Kokkos::DynRankView<MeshScalarT, PHX::Device>& jacobian_side_refcell,
-                       const shards::CellTopology & celltopo,
-                       const int cellDims,
-                       int local_side_id);
-
-  void calc_dudn_basal_scalar_field(Kokkos::DynRankView<ScalarT, PHX::Device> & qp_data_returned,
-                       const Kokkos::DynRankView<MeshScalarT, PHX::Device>& physPointsSide,
-                            const Kokkos::DynRankView<ScalarT, PHX::Device>& basalFriction_side,
-                            const Kokkos::DynRankView<ScalarT, PHX::Device>& dof_side,
-                                const Kokkos::DynRankView<MeshScalarT, PHX::Device>& jacobian_side_refcell,
-                                const shards::CellTopology & celltopo,
-                                const int cellDims,
-                                int local_side_id);
-
-  //Lateral bc
-  void calc_dudn_lateral(Kokkos::DynRankView<ScalarT, PHX::Device> & qp_data_returned,
-                       const Kokkos::DynRankView<MeshScalarT, PHX::Device>& physPointsSide,
-                     const Kokkos::DynRankView<ScalarT, PHX::Device>& thickness_side,
-                     const Kokkos::DynRankView<ScalarT, PHX::Device>& elevation_side,
-                     const Kokkos::DynRankView<ScalarT, PHX::Device>& dof_side,
-                         const Kokkos::DynRankView<MeshScalarT, PHX::Device>& jacobian_side_refcell,
-                         const shards::CellTopology & celltopo,
-                         const int cellDims,
-                         int local_side_id);
 
    // Do the side integration
   void evaluateBodySourceContribution(typename Traits::EvalData d);
