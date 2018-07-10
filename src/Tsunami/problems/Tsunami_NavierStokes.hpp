@@ -119,9 +119,13 @@ namespace Tsunami {
     /// Boolean marking whether SDBCs are used
     bool use_sdbcs_;
 
-    double mu, rho; //visocity and density
+    double mu, rho; //viscosity and density
 
     std::string stabType; //stabilization type
+    
+    std::string elementBlockName;
+
+    bool use_params_on_mesh; //boolean to indicate whether to use parameters (viscosity, density) on mesh 
   };
 
 }
@@ -137,6 +141,7 @@ namespace Tsunami {
 #include "PHAL_Neumann.hpp"
 #include "Tsunami_NavierStokesContravarientMetricTensor.hpp"
 #include "Tsunami_NavierStokesBodyForce.hpp"
+#include "Tsunami_NavierStokesParameters.hpp"
 #include "Tsunami_NavierStokesRm.hpp"
 #include "Tsunami_NavierStokesContinuityResid.hpp"
 #include "Tsunami_NavierStokesMomentumResid.hpp"
@@ -182,43 +187,43 @@ Tsunami::NavierStokes::constructEvaluators(
        << ", Dim= " << numDim << std::endl;
 
 
-   dl = rcp(new Albany::Layouts(worksetSize,numVertices,numNodes,numQPts,numDim, numDim));
-   TEUCHOS_TEST_FOR_EXCEPTION(dl->vectorAndGradientLayoutsAreEquivalent==false, std::logic_error,
+  dl = rcp(new Albany::Layouts(worksetSize,numVertices,numNodes,numQPts,numDim, numDim));
+  TEUCHOS_TEST_FOR_EXCEPTION(dl->vectorAndGradientLayoutsAreEquivalent==false, std::logic_error,
                               "Data Layout Usage in Stokes problem assumes vecDim = numDim");
-   Albany::EvaluatorUtils<EvalT, PHAL::AlbanyTraits> evalUtils(dl);
-   bool supportsTransient=true;
-   int offset=0;
+  Albany::EvaluatorUtils<EvalT, PHAL::AlbanyTraits> evalUtils(dl);
+  bool supportsTransient=true;
+  int offset=0;
 
-   // Temporary variable used numerous times below
-   Teuchos::RCP<PHX::Evaluator<AlbanyTraits> > ev;
+  // Temporary variable used numerous times below
+  Teuchos::RCP<PHX::Evaluator<AlbanyTraits> > ev;
 
-   // Define Field Names
+  // Define Field Names
 
-   if (haveFlowEq) {
-     Teuchos::ArrayRCP<std::string> dof_names(1);
-     Teuchos::ArrayRCP<std::string> dof_names_dot(1);
-     Teuchos::ArrayRCP<std::string> resid_names(1);
-     dof_names[0] = "Velocity";
-     dof_names_dot[0] = dof_names[0]+"_dot";
-     resid_names[0] = "Momentum Residual";
-     fm0.template registerEvaluator<EvalT>
+  if (haveFlowEq) {
+    Teuchos::ArrayRCP<std::string> dof_names(1);
+    Teuchos::ArrayRCP<std::string> dof_names_dot(1);
+    Teuchos::ArrayRCP<std::string> resid_names(1);
+    dof_names[0] = "Velocity";
+    dof_names_dot[0] = dof_names[0]+"_dot";
+    resid_names[0] = "Momentum Residual";
+    fm0.template registerEvaluator<EvalT>
        (evalUtils.constructGatherSolutionEvaluator(true, dof_names, dof_names_dot, offset));
 
-     fm0.template registerEvaluator<EvalT>
+    fm0.template registerEvaluator<EvalT>
        (evalUtils.constructDOFVecInterpolationEvaluator(dof_names[0], offset));
 
-     fm0.template registerEvaluator<EvalT>
+    fm0.template registerEvaluator<EvalT>
        (evalUtils.constructDOFVecInterpolationEvaluator(dof_names_dot[0], offset));
 
-     fm0.template registerEvaluator<EvalT>
+    fm0.template registerEvaluator<EvalT>
        (evalUtils.constructDOFVecGradInterpolationEvaluator(dof_names[0], offset));
 
-     fm0.template registerEvaluator<EvalT>
+    fm0.template registerEvaluator<EvalT>
        (evalUtils.constructScatterResidualEvaluator(true, resid_names,offset, "Scatter Momentum"));
-     offset += numDim;
-   }
+    offset += numDim;
+  }
 
-   if (haveFlowEq) {
+  if (haveFlowEq) {
      Teuchos::ArrayRCP<std::string> dof_names(1);
      Teuchos::ArrayRCP<std::string> dof_names_dot(1);
      Teuchos::ArrayRCP<std::string> resid_names(1);
@@ -228,29 +233,57 @@ Tsunami::NavierStokes::constructEvaluators(
      fm0.template registerEvaluator<EvalT>
        (evalUtils.constructGatherSolutionEvaluator(false, dof_names, dof_names_dot, offset));
 
-     fm0.template registerEvaluator<EvalT>
+    fm0.template registerEvaluator<EvalT>
        (evalUtils.constructDOFInterpolationEvaluator(dof_names[0], offset));
 
-     fm0.template registerEvaluator<EvalT>
+    fm0.template registerEvaluator<EvalT>
        (evalUtils.constructDOFInterpolationEvaluator(dof_names_dot[0], offset));
 
-     fm0.template registerEvaluator<EvalT>
+    fm0.template registerEvaluator<EvalT>
        (evalUtils.constructDOFGradInterpolationEvaluator(dof_names[0], offset));
 
-     fm0.template registerEvaluator<EvalT>
+    fm0.template registerEvaluator<EvalT>
        (evalUtils.constructScatterResidualEvaluator(false, resid_names,offset, "Scatter Continuity"));
-     offset ++;
-   }
+    offset ++;
+  }
 
 
-   fm0.template registerEvaluator<EvalT>
+  fm0.template registerEvaluator<EvalT>
      (evalUtils.constructGatherCoordinateVectorEvaluator());
 
-   fm0.template registerEvaluator<EvalT>
+  fm0.template registerEvaluator<EvalT>
      (evalUtils.constructMapToPhysicalFrameEvaluator(cellType, cubature));
 
-   fm0.template registerEvaluator<EvalT>
+  fm0.template registerEvaluator<EvalT>
      (evalUtils.constructComputeBasisFunctionsEvaluator(cellType, intrepidBasis, cubature));
+ 
+  //Declare density as nodal field 
+  Albany::StateStruct::MeshFieldEntity entity = Albany::StateStruct::NodalDataToElemNode;
+  {
+    std::string stateName("density");
+    std::string fieldName = "density";
+    RCP<ParameterList> p = stateMgr.registerStateVariable(stateName, dl->node_scalar, elementBlockName,true, &entity);
+    p->set<std::string>("Field Name", fieldName);
+    ev = Teuchos::rcp(new PHAL::LoadStateField<EvalT,PHAL::AlbanyTraits>(*p));
+    fm0.template registerEvaluator<EvalT>(ev);
+  }
+  // Intepolate density from nodes to QPs
+  ev = evalUtils.getPSTUtils().constructDOFInterpolationEvaluator("density");
+  fm0.template registerEvaluator<EvalT> (ev);
+
+  //Declare viscosity as nodal field 
+  entity = Albany::StateStruct::NodalDataToElemNode;
+  {
+    std::string stateName("viscosity");
+    std::string fieldName = "viscosity";
+    RCP<ParameterList> p = stateMgr.registerStateVariable(stateName, dl->node_scalar, elementBlockName,true, &entity);
+    p->set<std::string>("Field Name", fieldName);
+    ev = Teuchos::rcp(new PHAL::LoadStateField<EvalT,PHAL::AlbanyTraits>(*p));
+    fm0.template registerEvaluator<EvalT>(ev);
+  }
+  // Intepolate viscosity from nodes to QPs
+  ev = evalUtils.getPSTUtils().constructDOFInterpolationEvaluator("viscosity");
+  fm0.template registerEvaluator<EvalT> (ev);
 
   if (havePSPG || haveSUPG) { // Compute Contravarient Metric Tensor
     RCP<ParameterList> p =
@@ -279,9 +312,7 @@ Tsunami::NavierStokes::constructEvaluators(
 
     Teuchos::ParameterList& paramList = params->sublist("Body Force");
     p->set<Teuchos::ParameterList*>("Parameter List", &paramList);
-    p->set<double>("Viscosity", mu); 
-    p->set<double>("Density", rho); 
-
+    p->set<std::string>("Fluid Viscosity QP Name", "Viscosity Field");
 
     //Output
     p->set<std::string>("Body Force Name", "Body Force");
@@ -290,6 +321,26 @@ Tsunami::NavierStokes::constructEvaluators(
     fm0.template registerEvaluator<EvalT>(ev);
   }
 
+  if (haveFlowEq) { // Parameters
+    RCP<ParameterList> p = rcp(new ParameterList("Parameters"));
+
+    //Input
+
+    Teuchos::ParameterList& paramList = params->sublist("Parameters");
+    p->set<Teuchos::ParameterList*>("Parameter List", &paramList);
+    p->set<std::string>("Fluid Viscosity In QP Name", "viscosity");
+    p->set<std::string>("Fluid Density In QP Name", "density");
+    p->set<double>("Viscosity", mu); 
+    p->set<double>("Density", rho); 
+    p->set<bool>("Use Parameters on Mesh", use_params_on_mesh); 
+
+    //Output
+    p->set<std::string>("Fluid Viscosity QP Name", "Viscosity Field");
+    p->set<std::string>("Fluid Density QP Name", "Density Field");
+
+    ev = rcp(new Tsunami::NavierStokesParameters<EvalT,AlbanyTraits>(*p,dl));
+    fm0.template registerEvaluator<EvalT>(ev);
+  }
 
   if (haveFlowEq) { // Rm
     RCP<ParameterList> p = rcp(new ParameterList("Rm"));
@@ -303,8 +354,7 @@ Tsunami::NavierStokes::constructEvaluators(
     p->set<std::string>("Coordinate Vector Name", "Coord Vec");
     p->set<bool>("Have Advection Term", haveAdvection); 
     p->set<bool>("Have Transient Term", haveUnsteady); 
-    p->set<double>("Viscosity", mu); 
-    p->set<double>("Density", rho); 
+    p->set<std::string>("Fluid Density QP Name", "Density Field");
 
     p->set<RCP<ParamLib> >("Parameter Library", paramLib);
 
@@ -324,8 +374,8 @@ Tsunami::NavierStokes::constructEvaluators(
     p->set<std::string>("Jacobian Det Name", "Jacobian Det");
     p->set<string>("Jacobian Name",          "Jacobian");
     p->set<string>("Jacobian Inv Name",      "Jacobian Inv");
-    p->set<double>("Viscosity", mu); 
-    p->set<double>("Density", rho);
+    p->set<std::string>("Fluid Viscosity QP Name", "Viscosity Field");
+    p->set<std::string>("Fluid Density QP Name", "Density Field");
     p->set<std::string>("Stabilization Type", stabType); 
 
     p->set<RCP<ParamLib> >("Parameter Library", paramLib);
@@ -353,11 +403,9 @@ Tsunami::NavierStokes::constructEvaluators(
     p->set<std::string>("Body Force Name", "Body Force");
     p->set<std::string> ("Rm Name", "Rm");
     p->set<std::string> ("Tau Name", "Tau");
-    p->set<double>("Viscosity", mu); 
-    p->set<double>("Density", rho); 
+    p->set<std::string>("Fluid Viscosity QP Name", "Viscosity Field");
 
     p->set<std::string>("Velocity QP Variable Name", "Velocity");
-    p->set<std::string>("Density QP Variable Name", "Density");
     p->set<bool> ("Have SUPG", haveSUPG);
 
     p->set<RCP<ParamLib> >("Parameter Library", paramLib);
@@ -377,10 +425,8 @@ Tsunami::NavierStokes::constructEvaluators(
     p->set<std::string>("Weighted BF Name", Albany::weighted_bf_name);
     p->set<std::string>("Velocity QP Variable Name", "Velocity");
     p->set<std::string>("Gradient QP Variable Name", "Velocity Gradient");
-    p->set<std::string>("Density QP Variable Name", "Density");
-    p->set<double>("Viscosity", mu); 
-    p->set<double>("Density", rho); 
     p->set<bool> ("Have PSPG", havePSPG);
+    p->set<std::string>("Fluid Density QP Name", "Density Field");
 
     p->set<std::string>("Weighted Gradient BF Name", Albany::weighted_grad_bf_name);
     p->set<std::string> ("Tau Name", "Tau");
@@ -392,29 +438,6 @@ Tsunami::NavierStokes::constructEvaluators(
     ev = rcp(new Tsunami::NavierStokesContinuityResid<EvalT,AlbanyTraits>(*p,dl));
     fm0.template registerEvaluator<EvalT>(ev);
   }
-
-/*
-  Albany::StateStruct::MeshFieldEntity entity= Albany::StateStruct::NodalDistParameter;
-
-  //basal friction
-  {
-    std::string elementBlockName = meshSpecs.ebName;
-    std::string stateName("basal_friction");
-    RCP<ParameterList> p = stateMgr.registerStateVariable(stateName, dl->node_scalar, elementBlockName,true, &entity, "");
-  }
-
-  entity= Albany::StateStruct::NodalDataToElemNode;
-
-  //surface_height
-  {
-    std::string elementBlockName = meshSpecs.ebName;
-    std::string stateName("surface_height");
-    RCP<ParameterList> p = stateMgr.registerStateVariable(stateName, dl->node_scalar, elementBlockName,true, &entity);
-
-    ev = rcp(new PHAL::LoadStateField<EvalT,AlbanyTraits>(*p));
-    fm0.template registerEvaluator<EvalT>(ev);
-  }
-*/
 
   if (fieldManagerChoice == Albany::BUILD_RESID_FM)  {
     Teuchos::RCP<const PHX::FieldTag> ret_tag;
