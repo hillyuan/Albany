@@ -34,9 +34,7 @@ SET(SOURCES
   PHAL_Utilities.cpp
   )
 
-#IKT, FIXME: remove OR ALBANY_ATO from following if when
-#ATO is free of Epetra
-IF (ALBANY_EPETRA OR ALBANY_ATO)
+IF (ALBANY_EPETRA)
   SET(SOURCES ${SOURCES} Albany_ObserverFactory.cpp)
   SET(SOURCES ${SOURCES} Petra_Converters_64.cpp)
 ENDIF()
@@ -56,7 +54,6 @@ IF(ALBANY_EPETRA)
 ENDIF()
 
 SET(HEADERS
-  Albany_config.h
   Albany_Application.hpp
   Albany_DataTypes.hpp
   Albany_DistributedParameterLibrary.hpp
@@ -288,6 +285,8 @@ ENDIF ()
 #evaluators
 SET(SOURCES ${SOURCES}
   evaluators/bc/PHAL_Dirichlet.cpp
+  evaluators/bc/PHAL_TimeDepDBC.cpp
+  evaluators/bc/PHAL_TimeDepSDBC.cpp
   evaluators/bc/PHAL_SDirichlet.cpp
   evaluators/bc/PHAL_DirichletCoordinateFunction.cpp
   evaluators/bc/PHAL_DirichletField.cpp
@@ -401,6 +400,8 @@ SET(PDE_SRCS ${PDE_SRCS}
 
 SET(HEADERS ${HEADERS}
   evaluators/bc/PHAL_Dirichlet.hpp
+  evaluators/bc/PHAL_TimeDepDBC.hpp
+  evaluators/bc/PHAL_TimeDepSDBC.hpp
   evaluators/bc/PHAL_SDirichlet.hpp
   evaluators/bc/PHAL_DirichletCoordinateFunction.hpp
   evaluators/bc/PHAL_DirichletCoordinateFunction_Def.hpp
@@ -409,6 +410,8 @@ SET(HEADERS ${HEADERS}
   evaluators/bc/PHAL_DirichletOffNodeSet.hpp
   evaluators/bc/PHAL_DirichletOffNodeSet_Def.hpp
   evaluators/bc/PHAL_Dirichlet_Def.hpp
+  evaluators/bc/PHAL_TimeDepDBC_Def.hpp
+  evaluators/bc/PHAL_TimeDepSDBC_Def.hpp
   evaluators/bc/PHAL_SDirichlet_Def.hpp
   evaluators/bc/PHAL_IdentityCoordinateFunctionTraits.hpp
   evaluators/bc/PHAL_IdentityCoordinateFunctionTraits_Def.hpp
@@ -1058,6 +1061,8 @@ IF (INSTALL_ALBANY)
     INSTALL_DESTINATION ${LIB_INSTALL_DIR}/Albany/cmake
     PATH_VARS INCLUDE_INSTALL_DIR LIB_INSTALL_DIR)
   install(FILES ${HEADERS}
+    DESTINATION ${INCLUDE_INSTALL_DIR})
+  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/Albany_config.h
     DESTINATION ${INCLUDE_INSTALL_DIR})
   install(FILES ${CMAKE_CURRENT_BINARY_DIR}/AlbanyConfig.cmake
     DESTINATION ${LIB_INSTALL_DIR}/Albany/cmake )
