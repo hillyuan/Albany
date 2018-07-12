@@ -28,6 +28,7 @@ BodySourceBase<EvalT, Traits>
   numCells = dims[0];
   numQPs  = dims[1];
   numDims = dims[2];
+  body_force_ = PHX::MDField<ScalarT, Cell, QuadPoint, Dim>("Body Force", dl->qp_vector);
 }
 	
 template <typename EvalT, typename Traits>
@@ -149,9 +150,19 @@ evaluateFields(typename Traits::EvalData workset)
   }*/
 }
 
+template<typename EvalT, typename Traits>
+BodySource<EvalT, Traits>::~BodySource() {
+  for (std::size_t i=0; i<m_sources_.size(); ++i) {
+    BodySourceBase<EvalT,Traits>* sb =  m_sources_[i];
+    delete sb;
+  }
+  m_sources_.clear();
+}
+
 template <typename EvalT, typename Traits>
 Gravity<EvalT, Traits> :: Gravity(Teuchos::ParameterList & p, Teuchos::RCP<Albany::Layouts> dl)
-: BodySourceBase<EvalT, Traits>(p, dl)
+: BodySourceBase<EvalT, Traits>(p, dl),
+  m_density_(p.get<RealType>("Density"))
 {
   m_acc_ = p.get<RealType>("Acceleration");
   m_direction_ = p.get<Teuchos::Array<RealType>>("Direction",

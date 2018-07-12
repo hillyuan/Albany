@@ -46,6 +46,7 @@ public:
   
 protected:
   static int  numDims,  numQPs, numCells;
+  static PHX::MDField<ScalarT, Cell, QuadPoint, Dim> body_force_;
 };
 
 //
@@ -58,15 +59,13 @@ class BodySource : public BodySourceBase<EvalT, Traits> {
   using MeshScalarT = typename EvalT::MeshScalarT;
 
   BodySource(Teuchos::ParameterList & p, Teuchos::RCP<Albany::Layouts> dl);
+  ~BodySource();
 
   void postRegistrationSetup(
       typename Traits::SetupData d,
       PHX::FieldManager<Traits> & vm);
 
   void evaluateFields(typename Traits::EvalData d);
-  
-   // Output:
-  Kokkos::DynRankView<ScalarT, PHX::Device> m_outsource_;
 
  private:
   std::vector< BodySourceBase<EvalT, Traits>* > m_sources_;
@@ -87,11 +86,9 @@ class Gravity : public BodySourceBase<EvalT, Traits> {
   void evaluateFields(typename Traits::EvalData d);
 
  private:
+  RealType  m_density_;
   RealType  m_acc_;
   Teuchos::Array<RealType> m_direction_; 
-  
-  // Input:
-  PHX::MDField<const ScalarT,Cell,QuadPoint> density;
 };
 
 //
