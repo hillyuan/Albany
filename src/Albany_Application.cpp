@@ -664,6 +664,15 @@ void Albany::Application::buildProblem() {
                                "with them!\n");
   }
 
+  if ((no_dir_bcs_ == true) && (scaleBCdofs == true))
+  {
+    TEUCHOS_TEST_FOR_EXCEPTION(true, std::logic_error,
+                               "Error in Albany::Application: you are attempting "
+                               "to set 'Scale DOF BCs = true' for a problem with no  "
+                               "Dirichlet BCs!  Scaling will do nothing.  Re-run " 
+                               "with 'Scale DOF BCs = false'\n");
+  }
+
   neq = problem->numEquations();
   spatial_dimension = problem->spatialDimension();
 
@@ -3568,8 +3577,11 @@ void Albany::Application::loadWorksetNodesetInfo(PHAL::Workset &workset) {
 
 void Albany::Application::setScale(Teuchos::RCP<Tpetra_CrsMatrix> jacT) 
 {
-  if (scaleBCdofs == true) 
+  if (scaleBCdofs == true) {
+    if (scaleVec_->norm2() == 0.0) 
+      scaleVec_->putScalar(1.0);  
     return; 
+  }
 
   if (scale_type == CONSTANT) { // constant scaling
     scaleVec_->putScalar(1.0 / scale);
