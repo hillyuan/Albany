@@ -92,62 +92,18 @@ void
 BodySource<EvalT, Traits>::
 evaluateFields(typename Traits::EvalData workset)
 {
-  int const num_cells = workset.numCells;
-/*
-  if (is_constant_ == true) {
-    for (int cell = 0; cell < num_cells; ++cell) {
-      for (int qp = 0; qp < num_qp_; ++qp) {
-        for (int dim = 0; dim < num_dim_; ++dim) {
-          body_force_(cell, qp, dim) = constant_value_[dim];
+  this->body_force_.deep_copy(0.0);
+  for (std::size_t i=0; i<m_sources_.size(); ++i) {
+    BodySourceBase<EvalT,Traits>* sb =  m_sources_[i];
+    sb->evaluateFields(workset);
+	for (int cell = 0; cell < this->numCells; ++cell) {
+      for (int qp = 0; qp < this->numQPs; ++qp) {
+        for (int dim = 0; dim < this->numDims; ++dim) {
+          this->body_force_(cell, qp, dim) += sb->body_force_(cell, qp, dim);
         }
       }
     }
   }
-  else {
-
-    double omega2 = this->angular_frequency_ * this->angular_frequency_;
-    ScalarT qpmass, f_mag;
-    MeshScalarT xyz[3], len2, dot, r, f_dir[3];
-
-    for (int cell = 0; cell < num_cells; ++cell) {
-      for (std::size_t qp = 0; qp < num_qp_; ++qp) {
-
-        // Determine the qp's distance from the axis of rotation
-        len2 = dot = 0.;
-        for (std::size_t dim = 0; dim < num_dim_; dim++) {
-
-          xyz[dim] = f_dir[dim] = this->coordinates_(cell, qp, dim)
-              - this->rotation_center_[dim];
-          dot += xyz[dim] * this->rotation_axis_[dim];
-          len2 += xyz[dim] * xyz[dim];
-        }
-        r = std::sqrt(len2 - dot * dot);
-
-        // Determine the direction of force due to centripetal acceleration
-        len2 = 0.;
-        for (std::size_t dim = 0; dim < num_dim_; dim++) {
-
-          f_dir[dim] -= this->rotation_axis_[dim] * dot;
-          len2 += f_dir[dim] * f_dir[dim];
-        }
-        double len_reciprocal = 1. / sqrt(len2);
-        for (std::size_t dim = 0; dim < num_dim_; dim++) {
-
-          f_dir[dim] *= len_reciprocal;
-        }
-
-        // Determine the qp's mass
-        // qpmass = weights_(cell,qp) * density_(cell, qp);
-        // qp volume * density - Is this right?
-        qpmass = weights_(cell, qp) * density_;
-        f_mag = qpmass * omega2 * r;
-        for (std::size_t dim = 0; dim < num_dim_; dim++)
-
-          this->body_force_(cell, qp, dim) = f_dir[dim] * f_mag;
-
-      }
-    }
-  }*/
 }
 
 template<typename EvalT, typename Traits>
@@ -164,25 +120,29 @@ Gravity<EvalT, Traits> :: Gravity(Teuchos::ParameterList & p, Teuchos::RCP<Alban
 : BodySourceBase<EvalT, Traits>(p, dl),
   m_density_(p.get<RealType>("Density"))
 {
-  m_acc_ = p.get<RealType>("Acceleration");
+  m_acc_ = p.get<RealType>("Magnitude");
   m_direction_ = p.get<Teuchos::Array<RealType>>("Direction",
         Teuchos::tuple<double>(1.0, 0.0, 0.0));
-		
- // this->addDependentField(density);
 }
 
 template<typename EvalT, typename Traits>
 void Gravity<EvalT, Traits>::
 evaluateFields(typename Traits::EvalData workset)
 {
-  int const num_cells = workset.numCells;
-  std::cout << BodySourceBase<EvalT,Traits>::numQPs ;
+   for (int cell = 0; cell < this->numCells; ++cell) {
+      for (int qp = 0; qp < this->numQPs; ++qp) {
+        for (int dim = 0; dim < this->numDims; ++dim) {
+          this->body_force_(cell, qp, dim) = m_density_ * m_direction_[dim];
+        }
+      }
+    }
 }
 
 template <typename EvalT, typename Traits>
 Centripetal<EvalT, Traits>::
 Centripetal(Teuchos::ParameterList & p, Teuchos::RCP<Albany::Layouts> dl)
-: BodySourceBase<EvalT, Traits>(p, dl)
+: BodySourceBase<EvalT, Traits>(p, dl),
+  m_density_(p.get<RealType>("Density"))
 {
     rotation_center_ = p.get<Teuchos::Array<RealType>>("Rotation Center",
         Teuchos::tuple<double>(0.0, 0.0, 0.0));
@@ -203,6 +163,54 @@ Centripetal(Teuchos::ParameterList & p, Teuchos::RCP<Albany::Layouts> dl)
 	
 	coordinates_ = PHX::MDField<const MeshScalarT, Cell, QuadPoint, Dim>("Coord Vec", dl->qp_vector);
 	this->addDependentField(coordinates_);
+}
+
+template<typename EvalT, typename Traits>
+void Centripetal<EvalT, Traits>::
+evaluateFields(typename Traits::EvalData workset)
+{
+    double omega2 = this->angular_frequency_ * this->angular_frequency_;
+    ScalarT qpmass, f_mag;
+    MeshScalarT xyz[3], len2, dot, r, f_dir[3];
+
+    for (int cell = 0; cell < this->numCells; ++cell) {
+      for (std::size_t qp = 0; qp < this->numQPs; ++qp) {
+
+        // Determine the qp's distance from the axis of rotation
+        len2 = dot = 0.;
+        for (std::size_t dim = 0; dim < this->numDims; dim++) {
+
+          xyz[dim] = f_dir[dim] = this->coordinates_(cell, qp, dim)
+              - this->rotation_center_[dim];
+          dot += xyz[dim] * this->rotation_axis_[dim];
+          len2 += xyz[dim] * xyz[dim];
+        }
+        r = std::sqrt(len2 - dot * dot);
+
+        // Determine the direction of force due to centripetal acceleration
+        len2 = 0.;
+        for (std::size_t dim = 0; dim < this->numDims; dim++) {
+
+          f_dir[dim] -= this->rotation_axis_[dim] * dot;
+          len2 += f_dir[dim] * f_dir[dim];
+        }
+        double len_reciprocal = 1. / sqrt(len2);
+        for (std::size_t dim = 0; dim < this->numDims; dim++) {
+
+          f_dir[dim] *= len_reciprocal;
+        }
+
+        // Determine the qp's mass
+        // qpmass = weights_(cell,qp) * density_(cell, qp);
+        // qp volume * density - Is this right?
+    //    qpmass = weights_(cell, qp) * m_density_;
+        f_mag = qpmass * omega2 * r;
+        for (std::size_t dim = 0; dim < this->numDims; dim++)
+
+          this->body_force_(cell, qp, dim) = f_dir[dim] * f_mag;
+
+      }
+    }
 }
 
 

@@ -44,9 +44,9 @@ public:
 
   void evaluateFields(typename Traits::EvalData d) {};
   
-protected:
-  static int  numDims,  numQPs, numCells;
-  static PHX::MDField<ScalarT, Cell, QuadPoint, Dim> body_force_;
+public:
+  int  numDims,  numQPs, numCells;
+  PHX::MDField<ScalarT, Cell, QuadPoint, Dim> body_force_;
 };
 
 //
@@ -67,7 +67,7 @@ class BodySource : public BodySourceBase<EvalT, Traits> {
 
   void evaluateFields(typename Traits::EvalData d);
 
- private:
+ protected:
   std::vector< BodySourceBase<EvalT, Traits>* > m_sources_;
 };
 
@@ -106,9 +106,10 @@ class Centripetal : public BodySourceBase<EvalT, Traits> {
       typename Traits::SetupData d,
       PHX::FieldManager<Traits> & vm) {};
 
-  void evaluateFields(typename Traits::EvalData d) {};
+  void evaluateFields(typename Traits::EvalData d);
 
  private:
+  RealType  m_density_;
   Teuchos::Array<RealType> rotation_center_;
   Teuchos::Array<RealType> rotation_axis_;
   RealType angular_frequency_;
