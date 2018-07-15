@@ -54,7 +54,7 @@ public:
 //
 template <typename EvalT, typename Traits>
 class BodySource : public BodySourceBase<EvalT, Traits> {
- public:
+public:
   using ScalarT = typename EvalT::ScalarT;
   using MeshScalarT = typename EvalT::MeshScalarT;
 
@@ -67,13 +67,13 @@ class BodySource : public BodySourceBase<EvalT, Traits> {
 
   void evaluateFields(typename Traits::EvalData d);
 
- protected:
+protected:
   std::vector< BodySourceBase<EvalT, Traits>* > m_sources_;
 };
 
 template <typename EvalT, typename Traits>
 class Gravity : public BodySourceBase<EvalT, Traits> {
- public:
+public:
   using ScalarT = typename EvalT::ScalarT;
   using MeshScalarT = typename EvalT::MeshScalarT;
 
@@ -85,10 +85,10 @@ class Gravity : public BodySourceBase<EvalT, Traits> {
 
   void evaluateFields(typename Traits::EvalData d);
 
- private:
+private:
   RealType  m_density_;
   RealType  m_acc_;
-  Teuchos::Array<RealType> m_direction_; 
+  Teuchos::Array<RealType> m_direction_;
 };
 
 //
@@ -96,7 +96,7 @@ class Gravity : public BodySourceBase<EvalT, Traits> {
 //
 template <typename EvalT, typename Traits>
 class Centripetal : public BodySourceBase<EvalT, Traits> {
- public:
+public:
   using ScalarT = typename EvalT::ScalarT;
   using MeshScalarT = typename EvalT::MeshScalarT;
 
@@ -108,7 +108,7 @@ class Centripetal : public BodySourceBase<EvalT, Traits> {
 
   void evaluateFields(typename Traits::EvalData d);
 
- private:
+private:
   RealType  m_density_;
   Teuchos::Array<RealType> rotation_center_;
   Teuchos::Array<RealType> rotation_axis_;

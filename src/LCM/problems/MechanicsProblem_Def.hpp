@@ -1911,14 +1911,10 @@ MechanicsProblem::constructEvaluators(
 	  // Optional body load
       if (material_db_->isElementBlockSublist(eb_name, "Body Load")) {
 		  
-        Teuchos::ParameterList& eb_param = material_db_->getElementBlockSublist(eb_name, "Body Force");
-        if (param_list.isSublist("Inertial Force")) {
-           Teuchos::ParameterList& inertialParams = eb_param.sublist("Inertial Force");
-           inertialParams.set<RealType>( "Density", material_density);
-           ev = Teuchos::rcp(
-             new PHAL::Gravity<EvalT, PHAL::AlbanyTraits>(inertialParams, dl_));
-           fm0.template registerEvaluator<EvalT>(ev);
-		}
+        Teuchos::ParameterList& eb_param = material_db_->getElementBlockSublist(eb_name, "Body Load");
+        eb_param.set<RealType>( "Density", material_density);
+        ev = Teuchos::rcp(new PHAL::BodySource<EvalT, PHAL::AlbanyTraits>(eb_param, dl_));
+        fm0.template registerEvaluator<EvalT>(ev);
       }
 
       p->set<Teuchos::RCP<ParamLib>>("Parameter Library", paramLib);

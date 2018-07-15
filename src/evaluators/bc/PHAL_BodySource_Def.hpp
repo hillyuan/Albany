@@ -35,39 +35,26 @@ template <typename EvalT, typename Traits>
 BodySource<EvalT, Traits>::
 BodySource(Teuchos::ParameterList & p, Teuchos::RCP<Albany::Layouts> dl)
 : BodySourceBase<EvalT, Traits>(p, dl)
- /*   : body_force_("Body Force", dl->qp_vector),
-      density_(p.get<RealType>("Density")),
-      weights_("Weights", dl->qp_scalar),
-      coordinates_("Coord Vec", dl->qp_vector)*/
 {
-  std::string const &
-  type = p.get("Type", "Gravity");
+  if (p.isSublist("Inertial Force")) {
+    Teuchos::ParameterList& subParams = p.sublist("Inertial Force");
+    RealType material_density = p.get<RealType>( "Density" );
+    subParams.set<RealType>( "Density", material_density);
+    Gravity<EvalT, Traits>  *q = new Gravity<EvalT, Traits>(subParams, dl);
+    m_sources_.push_back( q );
+  }
 
-  if (type == "Gravity") {
-    Gravity<EvalT, Traits>  *q = new Gravity<EvalT, Traits>(p, dl);
-	m_sources_.push_back( q );
-  } else if (type == "Centripetal") {
-    Centripetal<EvalT, Traits>  *q = new Centripetal<EvalT, Traits>(p, dl);
+  if (p.isSublist("Centripetal")) {
+    Teuchos::ParameterList& subParams = p.sublist("Inertial Force");
+    RealType material_density = p.get<RealType>( "Density" );
+    subParams.set<RealType>( "Density", material_density);
+    Centripetal<EvalT, Traits>  *q = new Centripetal<EvalT, Traits>(subParams, dl);
 	m_sources_.push_back( q );
   }
-  else {
-    TEUCHOS_TEST_FOR_EXCEPTION(
-        true, Teuchos::Exceptions::InvalidParameter,
-        "Invalid body force type " << type);
-  }
   
-  PHX::MDField<const ScalarT,Cell,Node,VecDim> dofVec = decltype(dofVec)(
-           p.get<std::string>("DOF Name"),
-           p.get<Teuchos::RCP<PHX::DataLayout> >("DOF Data Layout"));
-//  int const num_cells = workset.numCells;
-//  m_outsource_ = Kokkos::createDynRankViewWithType<Kokkos::DynRankView<ScalarT, PHX::Device> >
-//         (dofVec.get_view(), "DDN", numCells, numNodes, numDOFsSet);
-  
-/*
-  
-  this->addDependentField(weights_);
-  this->addEvaluatedField(body_force_);
-  this->setName("Body Force" + PHX::typeAsString<EvalT>());*/
+ 
+  this->addEvaluatedField(this->body_force_);
+  this->setName("Body Load" + PHX::typeAsString<EvalT>());
 }
 
 //
@@ -79,8 +66,8 @@ BodySource<EvalT, Traits>::
 postRegistrationSetup(
     typename Traits::SetupData d, PHX::FieldManager<Traits> & fm)
 {
- /* this->utils.setFieldData(body_force_, fm);
-  if (is_constant_ == false) this->utils.setFieldData(coordinates_, fm);
+  this->utils.setFieldData(this->body_force_, fm);
+/*  if (is_constant_ == false) this->utils.setFieldData(coordinates_, fm);
   if (is_constant_ == false) this->utils.setFieldData(weights_, fm);*/
 }
 
@@ -129,6 +116,7 @@ template<typename EvalT, typename Traits>
 void Gravity<EvalT, Traits>::
 evaluateFields(typename Traits::EvalData workset)
 {
+	std::cout << " gravity here\n";
    for (int cell = 0; cell < this->numCells; ++cell) {
       for (int qp = 0; qp < this->numQPs; ++qp) {
         for (int dim = 0; dim < this->numDims; ++dim) {
