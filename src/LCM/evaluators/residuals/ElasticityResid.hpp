@@ -53,6 +53,7 @@ private:
   int numDims;
   bool enableTransient;
   bool hasDensity;
+  bool have_body_force_;
 
 };
 }

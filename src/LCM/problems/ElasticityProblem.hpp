@@ -15,6 +15,7 @@
 #include "PHAL_Workset.hpp"
 #include "PHAL_Dimension.hpp"
 #include "PHAL_AlbanyTraits.hpp"
+#include "PHAL_BodySource.hpp"
 
 #include "AAdapt_RC_Manager.hpp"
 
@@ -293,6 +294,22 @@ Albany::ElasticityProblem::constructEvaluators(
     }
   }
 
+  RealType material_density = 0.0;
+  if( params->isSublist("Density") )
+  {
+	  Teuchos::ParameterList& paramList = params->sublist("Density");
+	  material_density = paramList.get<double>("Value");
+  }
+  // Optional body load
+  bool hasBodyForce = false;
+  if (params->isSublist("Body Load")) {
+      Teuchos::ParameterList& paramList = params->sublist("Body Load");
+      paramList.set<RealType>( "Density", material_density);
+	  hasBodyForce = true;
+	  ev = rcp(new PHAL::BodySource<EvalT,AlbanyTraits>(paramList, dl));
+      fm0.template registerEvaluator<EvalT>(ev);
+  }
+
   { // Elastic Modulus
     RCP<ParameterList> p = rcp(new ParameterList);
 
@@ -438,6 +455,7 @@ Albany::ElasticityProblem::constructEvaluators(
     else{
       p->set<bool>("Disable Transient", true);
     }
+	p->set<bool>("Has Body Force", hasBodyForce);
 
     //Output
     p->set<std::string>("Residual Name", "Displacement Residual");

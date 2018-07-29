@@ -22,7 +22,8 @@ ElasticityResid(Teuchos::ParameterList& p) :
   wGradBF      (p.get<std::string>                   ("Weighted Gradient BF Name"),
 	        p.get<Teuchos::RCP<PHX::DataLayout>>("Node QP Vector Data Layout") ),
   ExResidual   (p.get<std::string>                   ("Residual Name"),
-		p.get<Teuchos::RCP<PHX::DataLayout>>("Node Vector Data Layout") )
+		p.get<Teuchos::RCP<PHX::DataLayout>>("Node Vector Data Layout") ),
+  have_body_force_(p.isType<bool>("Has Body Force"))
 {
   this->addDependentField(Stress);
   this->addDependentField(wGradBF);
@@ -54,21 +55,14 @@ ElasticityResid(Teuchos::ParameterList& p) :
     this->addDependentField(uDotDot);
   }
 
-#ifdef HARD_CODED_BODY_FORCE_ELASTICITY_RESID
-  Teuchos::RCP<PHX::DataLayout> node_qp_scalar_dl =
-    p.get< Teuchos::RCP<PHX::DataLayout>>("Node QP Scalar Data Layout");
-  wBF = decltype(wBF)
-    (p.get<std::string>("Weighted BF Name"), node_qp_scalar_dl);
-  this->addDependentField(wBF);
-#else
-  if (enableTransient) {
+
+  if (enableTransient || have_body_force_) {
     Teuchos::RCP<PHX::DataLayout> node_qp_scalar_dl =
       p.get< Teuchos::RCP<PHX::DataLayout>>("Node QP Scalar Data Layout");
     wBF = decltype(wBF)
       (p.get<std::string>("Weighted BF Name"), node_qp_scalar_dl);
     this->addDependentField(wBF);
   }
-#endif
 
   this->setName("ElasticityResid"+PHX::typeAsString<EvalT>());
 }
