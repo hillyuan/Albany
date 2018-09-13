@@ -381,6 +381,7 @@ SET(PDE_SRCS ${PDE_SRCS}
   evaluators/pde/PHAL_HelmholtzResid.cpp
   evaluators/pde/PHAL_LinComprNSBodyForce.cpp
   evaluators/pde/PHAL_LinComprNSResid.cpp
+  evaluators/pde/PHAL_BodyForce.cpp
   evaluators/pde/PHAL_NSBodyForce.cpp
   evaluators/pde/PHAL_NSContinuityResid.cpp
   evaluators/pde/PHAL_NSContravarientMetricTensor.cpp
@@ -583,6 +584,8 @@ SET(PDE_HDRS ${PDE_HDRS}
   evaluators/pde/PHAL_LinComprNSResid_Def.hpp
   evaluators/pde/PHAL_NSContinuityResid.hpp
   evaluators/pde/PHAL_NSContinuityResid_Def.hpp
+  evaluators/pde/PHAL_BodyForce.hpp
+  evaluators/pde/PHAL_BodyForce_Def.hpp
   evaluators/pde/PHAL_NSBodyForce.hpp
   evaluators/pde/PHAL_NSBodyForce_Def.hpp
   evaluators/pde/PHAL_NSContravarientMetricTensor.hpp
