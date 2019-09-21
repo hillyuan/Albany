@@ -156,6 +156,7 @@ target_link_libraries(yaml2xml teuchosparameterlist)
 #problems
 SET(SOURCES ${SOURCES}
   problems/Albany_AbstractProblem.cpp
+  problems/AbstractProblem.cpp
   problems/Albany_BCUtils.cpp
   problems/Albany_EvaluatorUtils.cpp
   problems/Albany_HeatProblem.cpp
@@ -181,6 +182,7 @@ SET(PDE_SRCS
   )
 SET(HEADERS ${HEADERS}
   problems/Albany_AbstractProblem.hpp
+  problems/AbstractProblem.hpp
   problems/Albany_BCUtils.hpp
   problems/Albany_BCUtils_Def.hpp
   problems/Albany_EvaluatorUtils.hpp
